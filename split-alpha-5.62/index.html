@@ -710,7 +710,7 @@ const weaponDescriptions={
 };
 function showWeaponDetails(){
  const c=chars[active],w=weaponDescriptions[active];
- dialog(c.name+'｜'+w.name,w.description+'\n現在のチャージ：'+c.charge+'/3\n\n※本編の正式な武器効果は未接続です。');
+ dialog(c.name+'｜'+w.name,w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+'\n\n※本編の正式な武器効果は未接続です。');
 }
 function showRelicDetails(slot=1){
  dialog(chars[active].name+'｜遺物 '+slot,'現在の戦闘UI試作には、遺物の装備データ・効果がまだ接続されていません。\n\n本編接続後は、選択中のキャラに関係する遺物の名前・効果・発動条件をここに表示します。\n\n※確認だけではターンやコストは進みません。');
@@ -815,7 +815,7 @@ function display(id){
  const c=chars[active];if(!c)return;
  if(id==='weaponinspect'){
   const w=weaponDescriptions[active];title.textContent=c.name+'｜'+w.name;
-  body.textContent=w.description+'\n現在のチャージ：'+c.charge+'/3\n\n※正式な武器効果は未接続です。';
+  body.textContent=w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+'\n\n※正式な武器効果は未接続です。';
  }else{
   const slot=id==='relicinspect'?1:2;
   title.textContent=c.name+'｜遺物 '+slot;
