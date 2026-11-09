@@ -1,0 +1,54 @@
+{
+  "source": "index.html (main alpha 5.62)",
+  "source_sha256": "66225fefb3c00e2e640132e1c101dcf0e8ea02f23318f4a82eb0a5102954db0e",
+  "source_bytes": 4416159,
+  "html_bytes": 90556,
+  "images": [
+    {
+      "name": "asset-01.png",
+      "bytes": 12140,
+      "sha256": "4dbcb35ad167bd2917faea0ac53dc6ce94eff194c19c8725866e7953f2596b3a"
+    },
+    {
+      "name": "asset-02.png",
+      "bytes": 6666,
+      "sha256": "8d28898f4a8fe878b926a40a043d252df16dcde04b0b2f170f3fb161b817ac4e"
+    },
+    {
+      "name": "asset-03.png",
+      "bytes": 6556,
+      "sha256": "0718f8e715e0ea86e0541e5e79b62427a4668d0c5db2cfa6f8298f8aa5d710e9"
+    },
+    {
+      "name": "asset-04.png",
+      "bytes": 6775,
+      "sha256": "416802b30ee59fb9b7ccf8e5443bf125aa821f8683245ab97a1d6ba0b0fbaa34"
+    },
+    {
+      "name": "asset-05.png",
+      "bytes": 30242,
+      "sha256": "6394ccd931597d6281244725eb71a1ca2ab913da2b98c95b00f2b48075c19836"
+    },
+    {
+      "name": "asset-06.png",
+      "bytes": 189016,
+      "sha256": "1f9b09fd4a7c4cd162a5d05d32ada60e44fdde27ed2fa5da11a9fa7612cbc264"
+    },
+    {
+      "name": "asset-07.png",
+      "bytes": 162605,
+      "sha256": "dcab9dbb8af6cd22f2d6a2e88bfab3c1450a95bdf3ced6f731f3bf6681fd63e5"
+    },
+    {
+      "name": "asset-08.png",
+      "bytes": 154505,
+      "sha256": "22581cc79c16afa54f09b4b484f862e914a4b0a5a8a1a2194d13a45a3a613682"
+    },
+    {
+      "name": "asset-09.png",
+      "bytes": 2675666,
+      "sha256": "35b0495e98a5c44d1993e4ff57369762c3da49de7760a24b2977994a1d809c67"
+    }
+  ],
+  "reversible_exact": true
+}
