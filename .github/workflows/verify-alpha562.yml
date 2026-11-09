@@ -48,3 +48,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_status_lifecycle.js
       - name: Test target selection locks
         run: node split-alpha-5.62/scripts/test_target_selection_lock.js
+      - name: Test boss break and status interactions
+        run: node split-alpha-5.62/scripts/test_break_status_matrix.js
