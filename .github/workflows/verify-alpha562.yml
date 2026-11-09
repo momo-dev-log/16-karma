@@ -36,3 +36,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_ailment_attribution.js
       - name: Test ally poison knockout and ailment exclusion
         run: node split-alpha-5.62/scripts/test_ally_poison_ko.js
+      - name: Test simultaneous victory and defeat endings
+        run: node split-alpha-5.62/scripts/test_endings.js
