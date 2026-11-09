@@ -17,7 +17,7 @@ check(html.includes('attackQueue=Promise.all([attackQueue,p])'),'Turn closure mu
 check(boss.includes('function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max;});}'),'Shared boss HP must synchronize to all parts');
 // Use the live configured values, not hardcoded copies.
 const limits=[...boss.matchAll(/breakLimit:(\d+),broken:false/g)].map(x=>Number(x[1]));
-const maxHp=Number(boss.match(/const boss=\{hp:(\d+)/)?.[1]||boss.match(/const maxEnemy=(\d+)/)?.[1]);
+const maxHp=Number(boss.match(/const boss=\{name:[^,]+,hp:(\d+)/)?.[1]);
 check(limits.length===3,'Expected three boss break limits');
 check(Number.isFinite(maxHp)&&maxHp>0,'Expected shared boss HP');
 check(limits.reduce((a,b)=>a+b,0)>maxHp,'Document current balancing constraint: all breaks exceed shared HP');
