@@ -1,0 +1,18 @@
+name: Verify alpha 5.62 combat UI
+on:
+  push:
+    branches:
+      - refactor/split-alpha-5-62-assets
+    paths:
+      - split-alpha-5.62/**
+      - .github/workflows/verify-alpha562.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify split images and JavaScript syntax
+        run: node split-alpha-5.62/scripts/verify_split.js
