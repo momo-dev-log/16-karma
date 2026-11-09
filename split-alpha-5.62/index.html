@@ -782,7 +782,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  if(defeated)ended=true;
  render();
  say([...hits.map(h=>`${h.c.name} −${h.actual}${h.blocked?'（防御'+h.blocked+'）':''}`),...poisonEvents,...inflicted].join(' / '));if(enemyHp===0)dialog('勝利','毒ダメージによる撃破を含むUI試作の仮戦闘です。');
- if(defeated)dialog('全員戦闘不能','再読み込みでやり直せます');
+ else if(defeated)dialog('全員戦闘不能','再読み込みでやり直せます');
 };
 const statusNames={poison:'毒',curse:'呪詛',burn:'火傷',frost:'凍傷',stun:'スタン',shock:'感電'};
 function statusText(u){
