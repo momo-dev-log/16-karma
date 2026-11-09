@@ -1,0 +1,28 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const slice=(a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);assert(i>=0&&j>i);return html.slice(i,j)};
+const element=()=>({style:{setProperty(){}},appendChild(){},remove(){},getBoundingClientRect(){return {left:0,top:0,width:100,height:100}},querySelectorAll(){return [element(),element(),element()]}});
+const nodes={arena:element(),foe:element(),log:element()};
+const ctx=vm.createContext({document:{createElement:element,getElementById:id=>nodes[id]},setTimeout:fn=>{fn();return 1},clearTimeout(){},Promise,console,render(){},dialog(){}});
+vm.runInContext(slice('let selectedFoe=0;','function render(){'),ctx);
+vm.runInContext(slice('function playerAttack(','// Status infrastructure:'),ctx);
+vm.runInContext(slice('const CURSE_DAMAGE=','function modifiedDamage('),ctx);
+const get=x=>vm.runInContext(x,ctx);let n=0;const eq=(x,y)=>{assert.equal(get(x),y,x);n++};
+(async()=>{
+ get("addStatus(foes[0],'stun',1,2)");eq("statusPower(foes[0],'stun')",1);
+ await get('queueAttack(180,"m")');eq('foes[0].broken',true);eq('foes[0].stunned',true);eq('foes[0].wait',1);eq('boss.hp',240);
+ const due=slice('const due=foes.map(','const hits=Object.entries(incoming)');
+ ctx.chars={m:{hp:100,guard:0},r:{hp:100,guard:0},k:{hp:100,guard:0}};
+ ctx.attackTargets=()=>['m'];ctx.modifiedDamage=n=>n;
+ const checkDue=()=>vm.runInContext('{'+due+';globalThis.isDue=due.some(x=>x.i===0)}',ctx);
+ checkDue();eq('isDue',false);
+ await get('queueAttack(10,"m")');eq('boss.hp',228);eq('foes[0].stunned',true);
+ const recovery=slice('foes.forEach((f,i)=>{\n  if(boss.hp>0&&f.poison>0)','syncBoss();');
+ ctx.poisonEvents=[];get('foes[0].interval=2');get('foes[0].poison=3');get('foes[0].weak=5');vm.runInContext(recovery,ctx);
+ eq('boss.hp',225);eq('foes[0].stunned',false);eq('foes[0].wait',2);eq('foes[0].weak',0);eq("statusBag(foes[0]).stun.turns",1);
+ checkDue();eq('isDue',false);
+ vm.runInContext(recovery,ctx);eq("statusPower(foes[0],'stun')",0);eq('foes[0].wait',2);
+ vm.runInContext(recovery,ctx);eq('foes[0].wait',1);
+ checkDue();eq('isDue',true);
+ console.log('PASS '+n+' real break, stun, poison and enemy-ready assertions');
+})().catch(e=>{console.error(e);process.exitCode=1});
