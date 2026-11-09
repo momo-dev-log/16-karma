@@ -574,7 +574,8 @@ function drawLines(){
   const bossBottom=point($('foe'),'bottom');
   const x=dest.x, y=bossBottom.y+24, effect=f.ailments?.[(turn-1)%f.ailments.length];
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[['m','r','k'][i]]);
-  const effectiveEffect=damage>chars[['m','r','k'][i]].guard?effect:null;
+  const victim=chars[['m','r','k'][i]];
+  const effectiveEffect=damage>victim.guard&&victim.hp>damage-victim.guard?effect:null;
   const label=String(damage)+(effectiveEffect?symbols[effectiveEffect]||'':'');
   const width=effectiveEffect?65:49;
   if(f.wait===1){
