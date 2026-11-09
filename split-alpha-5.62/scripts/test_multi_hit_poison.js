@@ -1,0 +1,14 @@
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
+const a=html.indexOf('const due=foes.map('),b=html.indexOf("say('敵の攻撃！');",a);assert(a>=0&&b>a);
+const ctx=vm.createContext({foes:[{hp:420,stunned:false,wait:1,damage:8,weak:0},{hp:420,stunned:false,wait:1,damage:7,weak:0}],chars:{m:{hp:30,guard:10}},attackTargets:()=>['m'],statusPower:()=>0,modifiedDamage:n=>n,document:{querySelector:()=>null},Map});
+vm.runInContext(html.slice(a,b),ctx);
+assert.equal(vm.runInContext('incoming.m',ctx),15);
+assert.equal(vm.runInContext('hits[0].blocked',ctx),10);
+assert.equal(vm.runInContext('hits[0].actual',ctx),5);
+assert.equal(vm.runInContext('hits[0].c.hp',ctx),30);
+const poisonStart=html.indexOf('foes.forEach((f,i)=>{\n  if(boss.hp>0&&f.poison>0)'),poisonEnd=html.indexOf('syncBoss();',poisonStart);assert(poisonStart>=0&&poisonEnd>poisonStart);
+const poisonCtx=vm.createContext({boss:{hp:5},foes:[{glyph:'禍',hp:5,poison:3,weak:0,stunned:false,wait:2,interval:2},{glyph:'呪',hp:5,poison:4,weak:0,stunned:false,wait:2,interval:2}],poisonEvents:[],tickStatuses(){},statusPower:()=>0});
+vm.runInContext(html.slice(poisonStart,poisonEnd),poisonCtx);
+assert.equal(poisonCtx.boss.hp,0);assert.equal(poisonCtx.poisonEvents.length,2);assert.equal(poisonCtx.poisonEvents[0],'禍 毒−3');assert.equal(poisonCtx.poisonEvents[1],'呪 毒−2');
+console.log('PASS 8 combined-hit and lethal-poison assertions');
