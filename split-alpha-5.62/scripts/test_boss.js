@@ -5,15 +5,15 @@ const section=(a,b)=>{const x=html.indexOf(a),y=html.indexOf(b,x);assert(x>=0&&y
 const combat=section('function playerAttack(','// Status infrastructure:');
 const boss=section('const foes=[','let attackQueue=');
 let checks=0;const check=(ok,msg)=>{assert(ok,msg);checks++};
-check(combat.includes('const foeIndex=selectedFoe;'),'Queue must capture target when attack is queued');
-check(combat.includes('playerAttack(n,id,foeIndex)'),'Attack must use captured target');
+check(html.includes('const foeIndex=selectedFoe;'),'Queue must capture target when attack is queued');
+check(html.includes('playerAttack(n,id,foeIndex)'),'Attack must use captured target');
 check(combat.includes('const foe=foes[foeIndex]'),'Damage must resolve against captured foe');
 check(combat.includes('boss.hp=Math.max(0,boss.hp-dealt)'),'Damage must reduce shared boss HP');
 check(combat.includes('foe.breakDamage=Math.min(foe.breakLimit,foe.breakDamage+dealt)'),'Break progress must accumulate on targeted part');
 check(combat.includes('if(!foe.broken)'),'Broken parts must not reaccumulate break damage');
 check(combat.includes('foe.broken=true;foe.stunned=true;foe.wait=foe.interval'),'Breaking a part must cancel its attack');
 check(combat.includes('const dealt=foe.broken?Math.round(n*1.2):n'),'Broken-part multiplier must be 1.2');
-check(combat.includes('attackQueue=Promise.all([attackQueue,p])'),'Turn closure must wait for queued animations');
+check(html.includes('attackQueue=Promise.all([attackQueue,p])'),'Turn closure must wait for queued animations');
 check(boss.includes('function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max;});}'),'Shared boss HP must synchronize to all parts');
 // Use the live configured values, not hardcoded copies.
 const limits=[...boss.matchAll(/breakLimit:(\d+),broken:false/g)].map(x=>Number(x[1]));
