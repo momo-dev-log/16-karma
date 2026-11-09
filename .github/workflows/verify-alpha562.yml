@@ -26,3 +26,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_boss.js
       - name: Exercise actual queued attack functions
         run: node split-alpha-5.62/scripts/test_actual_attack.js
+      - name: Exercise boss break threshold and rapid target switching
+        run: node split-alpha-5.62/scripts/test_break_sequence.js
