@@ -659,7 +659,7 @@ function statusBag(unit){return unit.statuses||(unit.statuses={});}
 function addStatus(unit,key,power=1,turns=1){
  if(!unit||unit.hp<=0||!Number.isFinite(power)||!Number.isFinite(turns)||turns<=0)return;
  const bag=statusBag(unit),old=bag[key];
- bag[key]={power:Math.max(0,(old?.power||0)+power),turns:Math.max(old?.turns||0,turns)};
+ bag[key]={...old,power:Math.max(0,(old?.power||0)+power),turns:Math.max(old?.turns||0,turns)};
 }
 function statusPower(unit,key){return statusBag(unit)[key]?.power||0;}
 function tickStatuses(unit){
