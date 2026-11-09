@@ -2,7 +2,7 @@
   "source": "index.html (main alpha 5.62)",
   "source_sha256": "66225fefb3c00e2e640132e1c101dcf0e8ea02f23318f4a82eb0a5102954db0e",
   "source_bytes": 4416159,
-  "html_bytes": 90556,
+  "html_bytes": 90592,
   "images": [
     {
       "name": "asset-01.png",
@@ -50,5 +50,6 @@
       "sha256": "35b0495e98a5c44d1993e4ff57369762c3da49de7760a24b2977994a1d809c67"
     }
   ],
-  "reversible_exact": true
+  "reversible_exact": false,
+  "note": "Original split was exactly reversible; weapon detail labels subsequently corrected in two places. PNG files remain byte-identical."
 }
