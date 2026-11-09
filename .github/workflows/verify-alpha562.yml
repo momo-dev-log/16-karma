@@ -32,3 +32,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_stun_recovery.js
       - name: Test combined enemy hits and lethal poison
         run: node split-alpha-5.62/scripts/test_multi_hit_poison.js
+      - name: Document multi-attacker ailment attribution
+        run: node split-alpha-5.62/scripts/test_ailment_attribution.js
