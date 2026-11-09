@@ -34,7 +34,7 @@ eq(Math.min(guarded.guard,incoming),8);
 eq(Math.min(guarded.hp,incoming-Math.min(guarded.guard,incoming)),0);
 // Verify that the actual turn-end code contains its poison, status, and guard-reset phases.
 const turn=extract("$('end').onclick=async()=>{","const statusNames=");
-for(const fragment of ['const due=foes.map(', 'const blocked=Math.min(c.guard,n)', 'if(boss.hp>0&&f.poison>0)', 'tickStatuses(f)', 'tickStatuses(c)', 'c.guard=0', 'const defeated=Object.values(chars).every']) {
+for(const fragment of ['const due=foes.map(', 'blocked=Math.min(c.guard,n)', 'if(boss.hp>0&&f.poison>0)', 'tickStatuses(f)', 'tickStatuses(c)', 'c.guard=0', 'const defeated=Object.values(chars).every']) {
  assert(turn.includes(fragment),`Missing turn phase: ${fragment}`);checks++;
 }
 console.log(`PASS ${checks} target/status/damage assertions and turn phase checks`);
