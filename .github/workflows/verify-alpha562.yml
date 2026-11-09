@@ -20,3 +20,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_status.js
       - name: Test turn progression and enemy damage
         run: node split-alpha-5.62/scripts/test_turn.js
+      - name: Test enemy forecasts against hit and ailment rules
+        run: node split-alpha-5.62/scripts/test_forecast.js
