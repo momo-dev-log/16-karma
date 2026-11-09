@@ -567,18 +567,19 @@ function drawLines(){
  const point=(el,where)=>{if(!el)return null;const r=el.getBoundingClientRect();return {x:r.left+r.width/2-rect.left,y:(where==='bottom'?r.bottom:r.top)-rect.top};};
  const symbols={burn:'🔥',stun:'✦',curse:'◈',shock:'⚡',frost:'❄',poison:'☠'};
  foes.forEach((f,i)=>{
-  if(boss.hp<=0||f.stunned)return;
+  if(boss.hp<=0||f.stunned||statusPower(f,'stun')||chars[['m','r','k'][i]].hp<=0)return;
   const src=point($('foe').querySelector(`.foe-unit[data-foe="${i}"]`),'bottom');
   const dest=point(document.querySelector(`.ally[data-id="${['m','r','k'][i]}"]`),'top');
   if(!src||!dest)return;
   const bossBottom=point($('foe'),'bottom');
   const x=dest.x, y=bossBottom.y+24, effect=f.ailments?.[(turn-1)%f.ailments.length];
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[['m','r','k'][i]]);
-  const label=String(damage)+(effect?symbols[effect]||'':'');
-  const width=effect?65:49;
+  const effectiveEffect=damage>chars[['m','r','k'][i]].guard?effect:null;
+  const label=String(damage)+(effectiveEffect?symbols[effectiveEffect]||'':'');
+  const width=effectiveEffect?65:49;
   if(f.wait===1){
    svg.append(make('rect',{x:x-width/2,y:y-17,width,height:34,rx:7,fill:'#23171f',stroke:'#c77378','stroke-width':1.6}));
-   svg.append(make('text',{x,y:y+7,'text-anchor':'middle','font-size':effect?18:22,'font-weight':800,fill:'#ffe3da'},label));
+   svg.append(make('text',{x,y:y+7,'text-anchor':'middle','font-size':effectiveEffect?18:22,'font-weight':800,fill:'#ffe3da'},label));
   }
   // Three vertical chevrons, centered above each corresponding ally.
   if(f.wait===1){
