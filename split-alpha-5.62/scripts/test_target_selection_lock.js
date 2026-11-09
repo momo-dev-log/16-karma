@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync(__dirname+'/../index.html','utf8');
-const patterns=[/b\\.onclick=\\(\\)=>\\{(if\\(ended\\|\\|resolving\\|\\|turnClosing\\)return;active=b\\.dataset\\.id;[^\\n]+)\\}/,/b\\.onclick=\\(\\)=>\\{(if\\(ended\\|\\|resolving\\|\\|turnClosing\\)return;selectedFoe=Number\\(b\\.dataset\\.foe\\);[^\\n]+)\\}/];
+const patterns=[/b\.onclick=\(\)=>\{(if\(ended\|\|resolving\|\|turnClosing\)return;active=b\.dataset\.id;[^\n]+)\}/,/b\.onclick=\(\)=>\{(if\(ended\|\|resolving\|\|turnClosing\)return;selectedFoe=Number\(b\.dataset\.foe\);[^\n]+)\}/];
 const bodies=patterns.map(p=>{const m=html.match(p);assert(m,'selection callback missing');return m[1]});
 let checks=0;
 for(const state of ['ended','resolving','turnClosing','free']){
