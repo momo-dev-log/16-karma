@@ -11,7 +11,7 @@ for(const scenario of [
  {bossHp:10,allyHp:[0,0,0],expected:['全員戦闘不能']},
  {bossHp:10,allyHp:[1,0,0],expected:[]},
 ]){
- const calls=[],ctx=vm.createContext({chars:Object.fromEntries(scenario.allyHp.map((hp,i)=>[i,{hp}])),ended:false,render(){},say(){},hits:[],poisonEvents:[],inflicted:[],enemyHp:scenario.bossHp,dialog:(name)=>calls.push(name)});
+ const calls=[],ctx=vm.createContext({chars:Object.fromEntries(scenario.allyHp.map((hp,i)=>[i,{hp}])),ended:scenario.bossHp===0,render(){},say(){},hits:[],poisonEvents:[],inflicted:[],enemyHp:scenario.bossHp,dialog:(name)=>calls.push(name)});
  vm.runInContext(resultBlock,ctx);
  assert.deepEqual(calls,scenario.expected);checks++;
  assert.equal(ctx.ended,scenario.bossHp===0||scenario.allyHp.every(hp=>hp===0));checks++;
