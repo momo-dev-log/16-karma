@@ -40,3 +40,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_endings.js
       - name: Test disabled combat actions after battle end
         run: node split-alpha-5.62/scripts/test_post_end_controls.js
+      - name: Test overlapping attack animations and turn close
+        run: node split-alpha-5.62/scripts/test_attack_race.js
