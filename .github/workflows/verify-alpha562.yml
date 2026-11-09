@@ -46,3 +46,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_card_curse_matrix.js
       - name: Test status stacking and expiry lifecycle
         run: node split-alpha-5.62/scripts/test_status_lifecycle.js
+      - name: Test target selection locks
+        run: node split-alpha-5.62/scripts/test_target_selection_lock.js
