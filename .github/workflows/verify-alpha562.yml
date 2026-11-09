@@ -34,3 +34,5 @@ jobs:
         run: node split-alpha-5.62/scripts/test_multi_hit_poison.js
       - name: Document multi-attacker ailment attribution
         run: node split-alpha-5.62/scripts/test_ailment_attribution.js
+      - name: Test ally poison knockout and ailment exclusion
+        run: node split-alpha-5.62/scripts/test_ally_poison_ko.js
