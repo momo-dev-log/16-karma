@@ -16,3 +16,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify split images and JavaScript syntax
         run: node split-alpha-5.62/scripts/verify_split.js
+      - name: Test real combat status functions
+        run: node split-alpha-5.62/scripts/test_status.js
