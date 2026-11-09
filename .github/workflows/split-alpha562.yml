@@ -1,0 +1,29 @@
+name: Split alpha 5.62 assets
+on:
+  push:
+    branches:
+      - refactor/split-alpha-5-62-assets
+    paths:
+      - scripts/split_alpha562.py
+      - .github/workflows/split-alpha562.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Split and verify alpha 5.62
+        run: python3 scripts/split_alpha562.py
+      - name: Commit split game assets to working branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add split-alpha-5.62/index.html split-alpha-5.62/assets split-alpha-5.62/verification.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Add verified alpha 5.62 split HTML and nine original PNGs"
+            git push origin HEAD:refactor/split-alpha-5-62-assets
+          fi
