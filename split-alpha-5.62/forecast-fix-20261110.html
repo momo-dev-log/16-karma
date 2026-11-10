@@ -597,7 +597,7 @@ function drawLines(){
   if(!targets.length)return;
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[targets[0]]);
   const effect=f.ailments?.[(turn-1)%f.ailments.length];
-  const labelY=forecastY;
+  const labelY=forecastY+6;
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
   // Render three small downward chevrons in the actual space above the badge.
