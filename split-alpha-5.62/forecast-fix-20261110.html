@@ -597,13 +597,10 @@ function drawLines(){
   // Anchor the forecast panel above the ally portraits, not near the boss.
   const labelY=bottom-34;
   const width=Math.min(rect.width/3-6,112);
-  // Spread all three downward chevrons across the lane above the panel.
-  const chevronTop=top+3;
-  const chevronBottom=labelY-29;
-  const chevronSpan=Math.max(0,chevronBottom-chevronTop);
+  // Keep three shallow, solid red chevrons together directly above the forecast panel.
   for(let j=0;j<3;j++){
-   const yy=chevronTop+chevronSpan*(j+1)/4;
-   svg.append(make('path',{d:`M ${x-10} ${yy-4} L ${x} ${yy+3} L ${x+10} ${yy-4}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,opacity:String(.35+j*.27)}));
+   const yy=labelY-62+j*12;
+   svg.append(make('path',{d:`M ${x-18} ${yy} L ${x} ${yy+5} L ${x+18} ${yy} L ${x+18} ${yy+5} L ${x} ${yy+10} L ${x-18} ${yy+5} Z`,fill:'#f04f4d',opacity:String(.4+j*.3)}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
   const iconSize=20, gap=3, count=targets.length;
