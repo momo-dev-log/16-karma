@@ -602,11 +602,9 @@ function drawLines(){
   const arrowStart=top+2;
   const arrowEnd=labelY-25;
   if(arrowEnd>arrowStart+12){
-   // Three original downward V chevrons, with real vertical spacing.
-   for(let j=0;j<3;j++){
-    const yy=arrowStart+(arrowEnd-arrowStart)*(j+1)/4;
-    svg.append(make('path',{d:`M ${x-10} ${yy-7} L ${x} ${yy+4} L ${x+10} ${yy-7}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round',opacity:String(.55+j*.2)}));
-   }
+   // One continuous downward arrow. Keep the head above the forecast badge.
+   const headY=arrowEnd-3;
+   svg.append(make('path',{d:`M ${x} ${arrowStart} L ${x} ${headY-11} M ${x-11} ${headY-13} L ${x} ${headY} L ${x+11} ${headY-13}`,fill:'none',stroke:'#f04f4d','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
   const iconSize=20, gap=3, count=targets.length;
