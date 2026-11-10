@@ -584,7 +584,7 @@ function drawLines(){
  const top=bossRect.bottom-rect.top+5;
  const bottom=alliesRect.top-rect.top-8;
  // Keep the forecast low and leave a visible, long arrow above it.
- const forecastY=Math.max(top+92,Math.min(bottom-27,top+(bottom-top)*.82));
+ const forecastY=bottom-36; // Badge bottom stays 15px above ally cards.
  foes.forEach((f,i)=>{
   if(boss.hp<=0||f.stunned||statusPower(f,'stun'))return;
   const x=rect.width*(i+.5)/3;
