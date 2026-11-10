@@ -584,7 +584,8 @@ function drawLines(){
  const top=bossRect.bottom-rect.top+5;
  const bottom=alliesRect.top-rect.top-8;
  // Keep the forecast low and leave a visible, long arrow above it.
- const forecastY=bottom-28; // Badge bottom remains 7px above ally cards.
+ // Place the forecast above ally cards, independently of the arrow shape.
+ const forecastY=bottom-28;
  foes.forEach((f,i)=>{
   if(boss.hp<=0||f.stunned||statusPower(f,'stun'))return;
   const x=rect.width*(i+.5)/3;
@@ -599,12 +600,11 @@ function drawLines(){
   const labelY=forecastY;
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
-  const arrowStart=top+2;
-  const arrowEnd=labelY-25;
-  if(arrowEnd>arrowStart+12){
-   // One continuous downward arrow. Keep the head above the forecast badge.
-   const headY=arrowEnd-3;
-   svg.append(make('path',{d:`M ${x} ${arrowStart} L ${x} ${headY-11} M ${x-11} ${headY-13} L ${x} ${headY} L ${x+11} ${headY-13}`,fill:'none',stroke:'#f04f4d','stroke-width':4,'stroke-linecap':'round','stroke-linejoin':'round'}));
+  // Single original-style red downward arrow, not stacked chevrons.
+  const arrowStart=top+3;
+  const arrowTip=labelY-24;
+  if(arrowTip-arrowStart>=22){
+   svg.append(make('path',{d:`M ${x} ${arrowStart} V ${arrowTip-11} M ${x-10} ${arrowTip-12} L ${x} ${arrowTip} L ${x+10} ${arrowTip-12}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round'}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
   const iconSize=20, gap=3, count=targets.length;
