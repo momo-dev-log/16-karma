@@ -600,11 +600,17 @@ function drawLines(){
   const labelY=forecastY;
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
-  // Single original-style red downward arrow, not stacked chevrons.
+  // Three separate original-style downward chevrons, with constant shape.
   const arrowStart=top+3;
-  const arrowTip=labelY-24;
-  if(arrowTip-arrowStart>=22){
-   svg.append(make('path',{d:`M ${x} ${arrowStart} V ${arrowTip-11} M ${x-10} ${arrowTip-12} L ${x} ${arrowTip} L ${x+10} ${arrowTip-12}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round'}));
+  const arrowEnd=labelY-25;
+  const available=arrowEnd-arrowStart;
+  if(available>=25){
+   const chevronHeight=8;
+   const spacing=(available-chevronHeight)/3;
+   for(let j=0;j<3;j++){
+    const cy=arrowStart+spacing*(j+0.5);
+    svg.append(make('path',{d:`M ${x-10} ${cy-4} L ${x} ${cy+4} L ${x+10} ${cy-4}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round',opacity:String(.35+j*.27)}));
+   }
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
   const iconSize=20, gap=3, count=targets.length;
