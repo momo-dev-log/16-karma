@@ -600,10 +600,13 @@ function drawLines(){
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
   const arrowStart=top+2;
-  const arrowEnd=labelY-24;
+  const arrowEnd=labelY-25;
   if(arrowEnd>arrowStart+8){
-   svg.append(make('path',{d:`M ${x} ${arrowStart} V ${arrowEnd-5}`,fill:'none',stroke:'#ef5350','stroke-width':3.4,'stroke-linecap':'round',opacity:'.92'}));
-   svg.append(make('path',{d:`M ${x-9} ${arrowEnd-13} L ${x} ${arrowEnd-3} L ${x+9} ${arrowEnd-13}`,fill:'none',stroke:'#ff6460','stroke-width':3.8,'stroke-linecap':'round','stroke-linejoin':'round'}));
+   // Preserve the original three red chevrons; only distribute them vertically.
+   for(let j=0;j<3;j++){
+    const yy=arrowStart+(arrowEnd-arrowStart)*(j+1)/4;
+    svg.append(make('path',{d:`M ${x-10} ${yy-4} L ${x} ${yy+3} L ${x+10} ${yy-4}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,opacity:String(.35+j*.27)}));
+   }
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
   const iconSize=20, gap=3, count=targets.length;
