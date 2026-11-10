@@ -604,11 +604,11 @@ function drawLines(){
   // Never hide all arrows when the available gap is short.
   const arrowTop=top+1;
   const arrowBottom=labelY-23;
-  const gap=Math.max(1,arrowBottom-arrowTop);
+  const arrowGap=Math.max(1,arrowBottom-arrowTop);
   for(let j=0;j<3;j++){
-   const cy=arrowTop+gap*(j+0.5)/3;
+   const cy=arrowTop+arrowGap*(j+0.5)/3;
    const halfWidth=8;
-   const halfHeight=Math.min(4,Math.max(2,gap/12));
+   const halfHeight=Math.min(4,Math.max(2,arrowGap/12));
    svg.append(make('path',{d:`M ${x-halfWidth} ${cy-halfHeight} L ${x} ${cy+halfHeight} L ${x+halfWidth} ${cy-halfHeight}`,fill:'none',stroke:'#f04f4d','stroke-width':3.2,'stroke-linecap':'round','stroke-linejoin':'round',opacity:String(.5+j*.22)}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
