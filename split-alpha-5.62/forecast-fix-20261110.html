@@ -583,9 +583,6 @@ function drawLines(){
  const alliesRect=$('allies').getBoundingClientRect();
  const top=bossRect.bottom-rect.top+5;
  const bottom=alliesRect.top-rect.top-8;
- // Keep the forecast low and leave a visible, long arrow above it.
- // Place the forecast above ally cards, independently of the arrow shape.
- const forecastY=bottom-28;
  foes.forEach((f,i)=>{
   if(boss.hp<=0||f.stunned||statusPower(f,'stun'))return;
   const x=rect.width*(i+.5)/3;
@@ -597,19 +594,14 @@ function drawLines(){
   if(!targets.length)return;
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[targets[0]]);
   const effect=f.ailments?.[(turn-1)%f.ailments.length];
-  const labelY=forecastY+6;
+  const labelY=Math.max(top+33,bottom-44);
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
-  // Render three small downward chevrons in the actual space above the badge.
-  // Never hide all arrows when the available gap is short.
-  const arrowTop=top+1;
-  const arrowBottom=labelY-23;
-  const arrowGap=Math.max(1,arrowBottom-arrowTop);
+  const arrowStart=Math.min(top+4,labelY-33);
+  const arrowEnd=labelY-25;
   for(let j=0;j<3;j++){
-   const cy=arrowTop+arrowGap*(j+0.5)/3;
-   const halfWidth=8;
-   const halfHeight=Math.min(4,Math.max(2,arrowGap/12));
-   svg.append(make('path',{d:`M ${x-halfWidth} ${cy-halfHeight} L ${x} ${cy+halfHeight} L ${x+halfWidth} ${cy-halfHeight}`,fill:'none',stroke:'#f04f4d','stroke-width':3.2,'stroke-linecap':'round','stroke-linejoin':'round',opacity:String(.5+j*.22)}));
+   const yy=arrowStart+(arrowEnd-arrowStart)*(j+1)/4;
+   svg.append(make('path',{d:`M ${x-10} ${yy-4} L ${x} ${yy+3} L ${x+10} ${yy-4}`,fill:'none',stroke:'#f04f4d','stroke-width':3.8,opacity:String(.35+j*.27)}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
   const iconSize=20, gap=3, count=targets.length;
