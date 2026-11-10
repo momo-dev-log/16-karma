@@ -583,6 +583,8 @@ function drawLines(){
  const alliesRect=$('allies').getBoundingClientRect();
  const top=bossRect.bottom-rect.top+5;
  const bottom=alliesRect.top-rect.top-8;
+ // Keep the forecast low and leave a visible, long arrow above it.
+ const forecastY=Math.max(top+92,Math.min(bottom-27,top+(bottom-top)*.82));
  foes.forEach((f,i)=>{
   if(boss.hp<=0||f.stunned||statusPower(f,'stun'))return;
   const x=rect.width*(i+.5)/3;
@@ -594,7 +596,7 @@ function drawLines(){
   if(!targets.length)return;
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[targets[0]]);
   const effect=f.ailments?.[(turn-1)%f.ailments.length];
-  const labelY=Math.max(top+65,bottom-27);
+  const labelY=forecastY;
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
   const arrowStart=top+2;
