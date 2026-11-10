@@ -594,7 +594,7 @@ function drawLines(){
   if(!targets.length)return;
   const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[targets[0]]);
   const effect=f.ailments?.[(turn-1)%f.ailments.length];
-  const labelY=Math.max(top+33,bottom-44);
+  const labelY=Math.max(top+33,bottom-32);
   const width=Math.min(rect.width/3-6,112);
   // The arrow points only to this enemy's own forecast panel, never to an ally.
   const arrowStart=Math.min(top+4,labelY-33);
