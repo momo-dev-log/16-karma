@@ -598,10 +598,10 @@ function drawLines(){
   const labelY=bottom-34;
   const width=Math.min(rect.width/3-6,112);
   // Original α5.62 chevron shape, stroke and opacity; positioned as a group above the forecast panel.
-  const gap=12;
+  const chevronGap=12;
   const mid=labelY-48;
   for(let j=0;j<3;j++){
-   const yy=mid+(j-1)*gap;
+   const yy=mid+(j-1)*chevronGap;
    svg.append(make('path',{d:`M ${x-15} ${yy-5} L ${x} ${yy+3} L ${x+15} ${yy-5}`,fill:'none',stroke:'#f04f4d','stroke-width':4.8,'stroke-linejoin':'miter',opacity:j===2?'0.95':j===1?'0.65':'0.38'}));
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
