@@ -607,16 +607,25 @@ function drawLines(){
   }
   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
   const iconSize=20, gap=3, count=targets.length;
-  const groupWidth=count*iconSize+(count-1)*gap+4+28;
-  let left=x-groupWidth/2;
-  targets.forEach(id=>{
-   const image=make('image',{x:left,y:labelY-15,width:iconSize,height:iconSize,href:PORTRAITS[id],preserveAspectRatio:'xMidYMid slice'});
-   svg.append(image);
-   svg.append(make('rect',{x:left,y:labelY-15,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#bca6a5','stroke-width':.8}));
-   left+=iconSize+gap;
-  });
-  svg.append(make('text',{x:left+2,y:labelY+1,'font-size':15,'font-weight':800,fill:'#ffe3da'},String(damage)));
-  if(effect)svg.append(make('text',{x,y:labelY+16,'text-anchor':'middle','font-size':10,fill:'#f5c7b8'},symbols[effect]||''));
+  // One row (icons, damage, ailment icon) centered in the panel horizontally and vertically.
+  const iconTop=labelY-iconSize/2;
+  const allLabel=f.attackKind==='all'?make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},'全体'):null;
+  const icons=allLabel?[]:targets.map(id=>[make('image',{y:iconTop,width:iconSize,height:iconSize,href:PORTRAITS[id],preserveAspectRatio:'xMidYMid slice'}),make('rect',{y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#bca6a5','stroke-width':.8})]);
+  icons.forEach(pair=>svg.append(...pair));
+  if(allLabel)svg.append(allLabel);
+  const damageText=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(damage));
+  svg.append(damageText);
+  const effectText=effect?make('text',{y:labelY,'dominant-baseline':'central','font-size':14,fill:'#f5c7b8'},symbols[effect]||''):null;
+  if(effectText)svg.append(effectText);
+  const damageWidth=damageText.getComputedTextLength(),effectWidth=effectText?effectText.getComputedTextLength():0;
+  const leadWidth=allLabel?allLabel.getComputedTextLength():icons.length?icons.length*iconSize+(icons.length-1)*gap:0;
+  const rowWidth=leadWidth+(leadWidth?5:0)+damageWidth+(effectText?4+effectWidth:0);
+  let left=x-rowWidth/2;
+  icons.forEach(pair=>{pair.forEach(el=>el.setAttribute('x',left));left+=iconSize+gap;});
+  if(allLabel){allLabel.setAttribute('x',left);left+=leadWidth+5;}
+  else if(icons.length)left+=5-gap;
+  damageText.setAttribute('x',left);left+=damageWidth;
+  if(effectText)effectText.setAttribute('x',left+4);
  });
 }
 
