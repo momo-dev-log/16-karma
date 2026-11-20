@@ -591,16 +591,30 @@ function drawLines(){
   if(f.wait!==1){
    // Charge-up panel: same box as a forecast panel; no chevrons, portraits, ailment or data-forecast-* values.
    const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
-   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
-   // Two rows centered as one visible block: the label, then "❔ base damage" where portraits would sit.
-   svg.append(make('text',{x,y:labelY-10.5,'text-anchor':'middle','dominant-baseline':'central','font-size':11,fill:'#efbd91','font-weight':700},`準備 ${f.wait}T`));
-   // 16px ❔ renders in a 20px emoji box, matching the 20px portrait icons; 5px gap like portrait-to-damage.
-   const unknown=make('text',{y:labelY+6.8,'dominant-baseline':'central','font-size':16,opacity:.55},'❔');
-   const base=make('text',{y:labelY+6.8,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da',opacity:.55},String(f.damage));
-   svg.append(unknown,base);
-   const unknownWidth=unknown.getComputedTextLength(),baseWidth=base.getComputedTextLength();
-   const rowLeft=x-(unknownWidth+5+baseWidth)/2;
-   unknown.setAttribute('x',rowLeft);base.setAttribute('x',rowLeft+unknownWidth+5);
+   // Thick red outline plus a blurred red glow clipped to the panel interior; the glow breathes every 2.4s via CSS.
+   // A negative delay keeps the phase continuous across redraws.
+   const phase=Math.round(performance.now()%2400),px=x-width/2,py=labelY-21;
+   const defs=make('defs'),clip=make('clipPath',{id:`charge-clip-${i}`}),blur=make('filter',{id:`charge-blur-${i}`,x:'-20%',y:'-50%',width:'140%',height:'200%'});
+   clip.append(make('rect',{x:px,y:py,width,height:42,rx:6}));blur.append(make('feGaussianBlur',{stdDeviation:3}));defs.append(clip,blur);svg.append(defs);
+   svg.append(make('rect',{x:px,y:py,width,height:42,rx:6,fill:'#23171ff2',stroke:'none'}));
+   const glow=make('g',{'clip-path':`url(#charge-clip-${i})`});
+   glow.append(make('rect',{x:px,y:py,width,height:42,rx:6,fill:'none',stroke:'#f04f4d','stroke-width':10,filter:`url(#charge-blur-${i})`,class:'charge-glow',style:`animation-delay:-${phase}ms`}));
+   svg.append(glow);
+   svg.append(make('rect',{x:px,y:py,width,height:42,rx:6,fill:'none',stroke:'#f04f4d','stroke-width':2.4}));
+   // One row centered in the panel: an empty portrait frame with "?" (target unknown), then base damage.
+   const row=make('g');svg.append(row);
+   const iconSize=20,iconTop=labelY-iconSize/2;
+   const base=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(f.damage));
+   row.append(base);
+   const baseWidth=base.getComputedTextLength(),rowLeft=x-(iconSize+5+baseWidth)/2;
+   row.append(make('rect',{x:rowLeft,y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#f04f4d','stroke-width':1.2}));
+   row.append(make('text',{x:rowLeft+iconSize/2,y:labelY,'text-anchor':'middle','dominant-baseline':'central','font-size':13,'font-weight':800,fill:'#f04f4d'},'?'));
+   base.setAttribute('x',rowLeft+iconSize+5);
+   // "準備 nT" tag on the panel's top edge with only its bottom 4px inside, built like the incoming-damage badge (18px tall, 1px border).
+   const tagText=make('text',{x,y:labelY-26,'text-anchor':'middle','dominant-baseline':'central','font-size':12,'font-weight':800,fill:'#efbd91'},`準備 ${f.wait}T`);
+   svg.append(tagText);
+   const tagWidth=tagText.getComputedTextLength()+12;
+   tagText.before(make('rect',{x:x-tagWidth/2+.5,y:labelY-35+.5,width:tagWidth-1,height:17,rx:4,fill:'#23171ff2',stroke:'#c77378','stroke-width':1}));
    return;
   }
   if(!targets.length)return;
@@ -904,6 +918,10 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
 </script><style>
 /* Incoming forecast damage badge straddling the top edge of each ally card (overlay only). */
 .incoming-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
+/* Charge-up panel: inner red glow breathes weak -> strong -> weak every 2.4s; held near peak when reduced motion is requested. */
+@keyframes charge-glow{0%,100%{opacity:.15}50%{opacity:.7}}
+.charge-glow{animation:charge-glow 2.4s ease-in-out infinite;opacity:.15}
+@media (prefers-reduced-motion:reduce){.charge-glow{animation:none;opacity:.6}}
 /* Shift the ally photo down inside its unchanged frame so heads clear the badge. */
 .ally-face{object-position:50% 3px}
 .incoming-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #c77378;border-radius:4px;background:#23171ff2;color:#ffe3da;font-size:12px;font-weight:800;line-height:16px;white-space:nowrap;pointer-events:none}
