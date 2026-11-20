@@ -591,9 +591,9 @@ function drawLines(){
   if(f.wait!==1){
    // Charge-up panel: same box as a forecast panel; no chevrons, portraits, ailment or data-forecast-* values.
    const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
-   // Thick red outline plus a blurred red glow clipped to the panel interior; the glow breathes every 2.4s via CSS.
+   // Thick red outline plus a blurred red glow clipped to the panel interior; the glow beats twice every 2s via CSS.
    // A negative delay keeps the phase continuous across redraws.
-   const phase=Math.round(performance.now()%2400),px=x-width/2,py=labelY-21;
+   const phase=Math.round(performance.now()%2000),px=x-width/2,py=labelY-21;
    const defs=make('defs'),clip=make('clipPath',{id:`charge-clip-${i}`}),blur=make('filter',{id:`charge-blur-${i}`,x:'-20%',y:'-50%',width:'140%',height:'200%'});
    clip.append(make('rect',{x:px,y:py,width,height:42,rx:6}));blur.append(make('feGaussianBlur',{stdDeviation:3}));defs.append(clip,blur);svg.append(defs);
    svg.append(make('rect',{x:px,y:py,width,height:42,rx:6,fill:'#23171ff2',stroke:'none'}));
@@ -918,9 +918,10 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
 </script><style>
 /* Incoming forecast damage badge straddling the top edge of each ally card (overlay only). */
 .incoming-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
-/* Charge-up panel: inner red glow breathes weak -> strong -> weak every 2.4s; held near peak when reduced motion is requested. */
-@keyframes charge-glow{0%,100%{opacity:.15}50%{opacity:.7}}
-.charge-glow{animation:charge-glow 2.4s ease-in-out infinite;opacity:.15}
+/* Charge-up panel: inner red glow double-beats (strong, then slightly weaker; 84/180/264/372ms) at the start of each 2s cycle, then rests;
+   held near peak when reduced motion is requested. */
+@keyframes charge-glow{0%{opacity:.15}4.2%{opacity:.75}9%{opacity:.2}13.2%{opacity:.62}18.6%,100%{opacity:.15}}
+.charge-glow{animation:charge-glow 2s ease-out infinite;opacity:.15}
 @media (prefers-reduced-motion:reduce){.charge-glow{animation:none;opacity:.6}}
 /* Shift the ally photo down inside its unchanged frame so heads clear the badge. */
 .ally-face{object-position:50% 3px}
