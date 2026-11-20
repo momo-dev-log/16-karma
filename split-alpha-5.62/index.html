@@ -550,6 +550,8 @@ const foes=[
 const boss={name:'禍呪灰',hp:420,max:420};
 // Attack previews are independent per boss part. A target icon, not the arrow, names the victim.
 const ids=['m','r','k'];
+// Status icons shared by the forecast panels and the ally status rows.
+const STATUS_ICONS={burn:'🔥',stun:'✦',curse:'◈',shock:'⚡',frost:'❄',poison:'☠'};
 function livingTargets(){return ids.filter(id=>chars[id].hp>0);}
 function attackTargets(f,i){return (f.targets||[]).filter(id=>chars[id].hp>0);}
 function chooseNextTargets(){
@@ -576,7 +578,7 @@ function forecastView(f,i){
 function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max;});}
 let attackQueue=Promise.resolve(),pendingAttacks=0,turnClosing=false;const foeFx=new Map(),dyingFoes=new Set();const maxEnemy=420,targets={m:12,k:8},$=id=>document.getElementById(id),say=s=>$('log').textContent=s;
 function render(){ $('turn').textContent=`TURN ${turn} · 戦闘UI検証`;renderFoes();
-$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:3},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small style="font-size:10px;color:#f0c7a4">${statusText(c)}</small></div></button>`).join('');$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
+$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:3},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
 const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta"><span class="weapon-label">${active==='m'?'デコミニチェンソー':active==='r'?'クラシック銃':'毒の武器'}</span><span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;say(c.name+'の武器技：'+originalWeapons[id].damage+'ダメージ');queueAttack(originalWeapons[id].damage,id);render()};$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
 function renderFoes(){
  const host=$('foe');host.classList.add('foe-multi','boss-unified');
@@ -590,7 +592,7 @@ function drawLines(){
  const ns='http://www.w3.org/2000/svg';
  const make=(tag,attrs={},value)=>{const el=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);if(value!==undefined)el.textContent=value;return el;};
  const portraitIds={m:'美桜',r:'麗華',k:'小春'};
- const symbols={burn:'🔥',stun:'✦',curse:'◈',shock:'⚡',frost:'❄',poison:'☠'};
+ const symbols=STATUS_ICONS;
  const bossRect=$('foe').getBoundingClientRect();
  const alliesRect=$('allies').getBoundingClientRect();
  const top=bossRect.bottom-rect.top+5;
@@ -854,12 +856,58 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  else if(defeated)dialog('全員戦闘不能','再読み込みでやり直せます');
 };
 const statusNames={poison:'毒',curse:'呪詛',burn:'火傷',frost:'凍傷',stun:'スタン',shock:'感電'};
-function statusText(u){
+// Ally status row: icon + remaining turns (addStatus) or poison counter, in statusText order.
+function statusIconsHtml(u){
+ const items=Object.entries(statusBag(u)).map(([k,v])=>[k,v.turns]);
+ if(u.poison>0)items.unshift(['poison',u.poison]);
+ if(!items.length)return 'なし';
+ return items.map(([k,n])=>`<span class="st-item"><span class="st-icon">${STATUS_ICONS[k]||'?'}</span><span class="st-num">${n}</span></span>`).join('')+'<span class="st-more" hidden></span>';
+}
+// Visible gaps (1px icon-number, 6px between statuses) are measured on the glyph ink, so cancel each glyph's side bearings
+// with margins measured by drawing the glyph with this device's font (4x canvas, ink = alpha >= 25%).
+const inkCache=new Map();
+function inkBearings(el,text){
+ const cs=getComputedStyle(el),size=parseFloat(cs.fontSize),key=`${cs.fontWeight}|${size}|${cs.fontFamily}|${text}`;
+ if(!inkCache.has(key)){
+  let result={l:0,r:0};
+  try{
+   const S=4,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+   const font=`${cs.fontStyle} ${cs.fontWeight} ${size*S}px ${cs.fontFamily}`;ctx.font=font;
+   const width=ctx.measureText(text).width,pad=size*S;
+   canvas.width=Math.ceil(width+pad*2);canvas.height=Math.ceil(size*S*2);
+   ctx.font=font;ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(text,pad,canvas.height/2);
+   const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let left=-1,right=-1;
+   for(let x=0;x<canvas.width;x++)for(let y=0;y<canvas.height;y++)if(data[(y*canvas.width+x)*4+3]>=64){if(left<0)left=x;right=x+1;break;}
+   if(left>=0)result={l:(left-pad)/S,r:(pad+width-right)/S};
+  }catch(_){}
+  inkCache.set(key,result);
+ }
+ return inkCache.get(key);
+}
+// Hide trailing icons that do not fit the row and show "+N" for them.
+function fitAllyStatuses(){
+ $('allies').querySelectorAll('.ally-status').forEach(row=>{
+  const items=[...row.querySelectorAll('.st-item')],more=row.querySelector('.st-more');if(!more)return;
+  const bear=el=>inkBearings(el,el.textContent);
+  items.forEach((item,i)=>{
+   const [icon,num]=item.children;
+   num.style.marginLeft=-(bear(icon).r+bear(num).l)+'px';
+   if(i)item.style.marginLeft=-(bear(items[i-1].lastElementChild).r+bear(icon).l)+'px';
+  });
+  let hidden=0;
+  const place=()=>{const last=items[items.length-hidden-1];more.style.marginLeft=last?-(bear(last.lastElementChild).r+bear(more).l)+'px':'';};
+  while(row.scrollWidth>row.clientWidth&&hidden<items.length){
+   hidden++;items[items.length-hidden].hidden=true;more.hidden=false;more.textContent='+'+hidden;place();
+  }
+ });
+}
+function statusEntries(u){
  const entries=Object.entries(statusBag(u)).map(([k,v])=>`${statusNames[k]||k}${k==='shock'?'（武器技・先頭カード不可）':k==='stun'?'（行動不可）':k==='burn'?'（被ダメ+'+v.power+'%）':k==='frost'?'（与ダメ-'+v.power+'）':k==='curse'?'（Cost消費でHP減少）':' '+v.power} / 残${v.turns}T`);
  if(u.poison>0)entries.unshift(`毒 ${u.poison}（毎ターン）`);
  if(u.weak>0)entries.push(`攻撃軽減 ${u.weak}（今ターン）`);
- return entries.join('・')||'なし';
+ return entries;
 }
+function statusText(u){return statusEntries(u).join('・')||'なし';}
 // Status test panel: same strengths as enemy-attack ailments (2 enemy phases); poison is the unit's poison counter (+2).
 function statusTestUnit(){const v=$('st-target').value;return v==='foe'?foes[selectedFoe]:chars[v];}
 $('st-apply').onclick=()=>{
@@ -1063,9 +1111,9 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 </script><style>
 /* α5.17: tooltip anchored to the card row, not the viewport. */
 .cards{position:relative;overflow:visible}
-#card-hold-description{position:absolute;z-index:95;display:none;pointer-events:none;width:min(310px,calc(100vw - 24px));padding:11px 13px;background:#26232cf5;border:1px solid #b9979c;border-radius:9px;box-shadow:0 6px 24px #000b;color:#f5e9e4;font-size:13px;line-height:1.5;white-space:pre-wrap;box-sizing:border-box}
-#card-hold-description.visible{display:block}
-#card-hold-description strong{display:block;color:#efd2a6;margin-bottom:5px}
+#ally-status-hold,#card-hold-description{position:absolute;z-index:95;display:none;pointer-events:none;width:min(310px,calc(100vw - 24px));padding:11px 13px;background:#26232cf5;border:1px solid #b9979c;border-radius:9px;box-shadow:0 6px 24px #000b;color:#f5e9e4;font-size:13px;line-height:1.5;white-space:pre-wrap;box-sizing:border-box}
+#ally-status-hold.visible,#card-hold-description.visible{display:block}
+#ally-status-hold strong,#card-hold-description strong{display:block;color:#efd2a6;margin-bottom:5px}
 .card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
 /* α5.19: target-specific impact positioning */
@@ -1118,6 +1166,52 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
   if(suppressClick&&e.target.closest?.('.card')){e.preventDefault();e.stopImmediatePropagation();suppressClick=false}
  },true);
  document.addEventListener('contextmenu',e=>{if(e.target.closest?.('.card'))e.preventDefault()},true);
+})();
+</script><style>
+/* Ally status row: icon (14) + number (11/700) in the old 20px line box, 1px inside, 6px between statuses; one line, overflow summarized as +N. */
+.ally .ally-status{display:flex;align-items:center;gap:6px;box-sizing:border-box;height:20px;padding-top:6px;overflow:hidden;white-space:nowrap;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ally .ally-status .st-item{display:inline-flex;align-items:center;gap:1px;flex:0 0 auto}
+.ally .ally-status .st-icon{font-size:14px;line-height:1}
+.ally .ally-status .st-num,.ally .ally-status .st-more{font-size:11px;font-weight:700;line-height:1;flex:0 0 auto}
+.ally .ally-status [hidden]{display:none}
+#ally-status-hold{position:fixed}
+</style>
+<div id="ally-status-hold" role="status"><strong id="ally-status-hold-title"></strong><span id="ally-status-hold-body"></span></div>
+<script>
+(()=>{
+ // Long-press the ally status row: same look and hold time (360ms) as the hand-card explanation; closes on release.
+ const tip=document.getElementById('ally-status-hold');
+ const title=document.getElementById('ally-status-hold-title');
+ const body=document.getElementById('ally-status-hold-body');
+ let card=null,timer=null,held=false,startX=0,startY=0,suppressClick=false;
+ function show(){
+  const id=card?.dataset.id,c=chars[id];if(!c)return;
+  title.textContent=c.name+'｜状態異常';
+  body.textContent=statusEntries(c).join('\n')||'なし';
+  held=true;suppressClick=true;tip.classList.add('visible');
+  const r=card.getBoundingClientRect(),w=tip.getBoundingClientRect().width,h=tip.getBoundingClientRect().height;
+  tip.style.left=Math.max(12,Math.min(innerWidth-w-12,r.left+r.width/2-w/2))+'px';
+  tip.style.top=Math.max(8,r.top-h-9)+'px';
+ }
+ function close(){clearTimeout(timer);timer=null;held=false;card=null;tip.classList.remove('visible')}
+ document.addEventListener('touchstart',e=>{
+  suppressClick=false;
+  const row=e.target.closest?.('.ally-status');if(!row||e.touches.length!==1)return;
+  close();card=row.closest('.ally');startX=e.touches[0].clientX;startY=e.touches[0].clientY;
+  timer=setTimeout(show,360);
+ },{capture:true,passive:true});
+ document.addEventListener('touchmove',e=>{
+  if(!card)return;
+  if(!held&&e.touches.length){const t=e.touches[0];if(Math.hypot(t.clientX-startX,t.clientY-startY)>10){clearTimeout(timer);timer=null;card=null}}
+ },{capture:true,passive:true});
+ document.addEventListener('touchend',close,{capture:true,passive:true});
+ document.addEventListener('touchcancel',()=>{if(!held)close()},{capture:true,passive:true});
+ // A long press must not switch the active character; a normal tap still does.
+ document.addEventListener('click',e=>{
+  if(suppressClick&&e.target.closest?.('.ally')){e.preventDefault();e.stopImmediatePropagation()}
+  suppressClick=false;
+ },true);
+ document.addEventListener('contextmenu',e=>{if(e.target.closest?.('.ally-status'))e.preventDefault()},true);
 })();
 </script><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
  <button id="preview-toggle" type="button" style="background:#4d3659;color:white;border:1px solid #b989eb;border-radius:8px;padding:8px;">予告テスト</button>
