@@ -610,8 +610,8 @@ function drawLines(){
    row.append(make('rect',{x:rowLeft,y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#f04f4d','stroke-width':1.2}));
    row.append(make('text',{x:rowLeft+iconSize/2,y:labelY,'text-anchor':'middle','dominant-baseline':'central','font-size':13,'font-weight':800,fill:'#f04f4d'},'?'));
    base.setAttribute('x',rowLeft+iconSize+5);
-   // "準備 nT" tag on the panel's top edge with only its bottom 4px inside, built like the incoming-damage badge (18px tall, 1px border).
-   const tagText=make('text',{x,y:labelY-26,'text-anchor':'middle','dominant-baseline':'central','font-size':12,'font-weight':800,fill:'#efbd91'},`準備 ${f.wait}T`);
+   // "予兆 あとN" tag (N = turn ends left until the attack forecast appears = wait-1) on the panel's top edge with only its bottom 4px inside, built like the incoming-damage badge (18px tall, 1px border).
+   const tagText=make('text',{x,y:labelY-26,'text-anchor':'middle','dominant-baseline':'central','font-size':12,'font-weight':800,fill:'#efbd91'},`予兆 あと${f.wait-1}`);
    svg.append(tagText);
    const tagWidth=tagText.getComputedTextLength()+12;
    tagText.before(make('rect',{x:x-tagWidth/2+.5,y:labelY-35+.5,width:tagWidth-1,height:17,rx:4,fill:'#23171ff2',stroke:'#c77378','stroke-width':1}));
@@ -775,7 +775,7 @@ function showRelicDetails(slot=1){
  dialog(chars[active].name+'｜遺物 '+slot,'現在の戦闘UI試作には、遺物の装備データ・効果がまだ接続されていません。\n\n本編接続後は、選択中のキャラに関係する遺物の名前・効果・発動条件をここに表示します。\n\n※確認だけではターンやコストは進みません。');
 }
 $('relicinspect').onclick=()=>showRelicDetails(1);$('relicinspect2').onclick=()=>showRelicDetails(2);
-function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=d;$('modal').classList.add('show')}$('close').onclick=()=>$('modal').classList.remove('show');$('info').onclick=()=>dialog('禍呪灰の攻撃予告','禍・呪・灰は共通HPの1体のボスです。各部位が独立して攻撃します。赤い三段矢印は予告枠を指し、枠内の顔アイコンが攻撃対象です。準備2Tは次のターンまで待つ強攻撃。部位をタップするとそこだけ狙えます。部位には非表示の破壊耐久値があり、各部位1回だけ破壊できます。破壊した部位はそのターンの攻撃・準備がキャンセルされ、次ターンから新たな攻撃を開始します。破壊済み部位へのダメージは1.2倍です。');$('end').onclick=async()=>{
+function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=d;$('modal').classList.add('show')}$('close').onclick=()=>$('modal').classList.remove('show');$('info').onclick=()=>dialog('禍呪灰の攻撃予告','禍・呪・灰は共通HPの1体のボスです。各部位が独立して攻撃します。赤い三段矢印は予告枠を指し、枠内の顔アイコンが攻撃対象です。『予兆 あと1』は、強い攻撃を溜めている合図です。あと1回ターンを終えると、誰を狙うかが分かる攻撃の予告に変わります。部位をタップするとそこだけ狙えます。部位には非表示の破壊耐久値があり、各部位1回だけ破壊できます。破壊した部位はそのターンの攻撃・準備がキャンセルされ、次ターンから新たな攻撃を開始します。破壊済み部位へのダメージは1.2倍です。');$('end').onclick=async()=>{
  if(ended||resolving||turnClosing)return;
  turnClosing=true;render();
  await attackQueue;
