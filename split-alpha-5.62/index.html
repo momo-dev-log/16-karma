@@ -860,6 +860,25 @@ function statusText(u){
  if(u.weak>0)entries.push(`攻撃軽減 ${u.weak}（今ターン）`);
  return entries.join('・')||'なし';
 }
+// Status test panel: same strengths as enemy-attack ailments (2 enemy phases); poison is the unit's poison counter (+2).
+function statusTestUnit(){const v=$('st-target').value;return v==='foe'?foes[selectedFoe]:chars[v];}
+$('st-apply').onclick=()=>{
+ if(ended||resolving||turnClosing)return;
+ const target=$('st-target').value,unit=statusTestUnit(),key=$('st-type').value,name=v=>target==='foe'?'禍呪灰「'+unit.glyph+'」':unit.name;
+ if(!unit||unit.hp<=0){say(name()+'には付与できません');return;}
+ if(key==='poison')unit.poison=(unit.poison||0)+2;
+ else{
+  addStatus(unit,key,key==='burn'?25:key==='frost'?10:1,2);
+  if(key==='shock'&&target!=='foe')statusBag(unit).shock.blockedCards=[target==='m'?'M1':target==='r'?'R1':'K1'];
+ }
+ render();drawLines();say('テスト：'+name()+'に'+statusNames[key]+'を付与');
+};
+$('st-clear').onclick=()=>{
+ if(ended||resolving||turnClosing)return;
+ const target=$('st-target').value,unit=statusTestUnit();if(!unit)return;
+ unit.statuses={};unit.poison=0;
+ render();drawLines();say('テスト：'+(target==='foe'?'禍呪灰「'+unit.glyph+'」':unit.name)+'の状態異常を解除');
+};
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
 /* Hold summary only: keep the existing arena, arrows and forecast layout. */
