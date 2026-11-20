@@ -477,6 +477,8 @@
 <script>
 'use strict';
 const PORTRAITS={"m": "assets/asset-06.png", "r": "assets/asset-07.png", "k": "assets/asset-08.png"};
+// Forecast face-icon outline color per character (muted ribbon colors). Edit here to add characters or change colors.
+const FACE_BORDER={m:'#b66d78',r:'#7281b3',k:'#639264'};
 const cardList=[
  ['M1','m','怒りを宿す刃',1,50,'hit','敵に50'],
  ['M2','m','逆上',1,40,'ifM','敵に40。美桜が狙われる時は60'],
@@ -635,7 +637,7 @@ function drawLines(){
   // One row (icons, damage, ailment icon) centered in the panel horizontally and vertically.
   const iconTop=labelY-iconSize/2;
   const allLabel=f.attackKind==='all'?make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},'全体'):null;
-  const icons=allLabel?[]:targets.map(id=>[make('image',{y:iconTop,width:iconSize,height:iconSize,href:PORTRAITS[id],preserveAspectRatio:'xMidYMid slice'}),make('rect',{y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#bca6a5','stroke-width':.8})]);
+  const icons=allLabel?[]:targets.map(id=>[make('image',{y:iconTop,width:iconSize,height:iconSize,href:PORTRAITS[id],preserveAspectRatio:'xMidYMid slice'}),make('rect',{y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:FACE_BORDER[id]||'#bca6a5','stroke-width':1.2})]);
   icons.forEach(pair=>svg.append(...pair));
   if(allLabel)svg.append(allLabel);
   const damageText=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(damage));
