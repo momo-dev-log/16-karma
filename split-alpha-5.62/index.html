@@ -589,7 +589,12 @@ function drawLines(){
   const x=rect.width*(i+.5)/3;
   const targets=attackTargets(f,i);
   if(f.wait!==1){
-   svg.append(make('text',{x,y:Math.min(bottom-10,top+32),'text-anchor':'middle','font-size':11,fill:'#efbd91','font-weight':700},`準備 ${f.wait}T`));
+   // Charge-up panel: same box as a forecast panel; no chevrons, portraits, ailment or data-forecast-* values.
+   const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
+   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4}));
+   // Two rows (11px label, 4px gap, 15px base damage) centered as one block in the panel.
+   svg.append(make('text',{x,y:labelY-9.5,'text-anchor':'middle','dominant-baseline':'central','font-size':11,fill:'#efbd91','font-weight':700},`準備 ${f.wait}T`));
+   svg.append(make('text',{x,y:labelY+7.5,'text-anchor':'middle','dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da',opacity:.55},String(f.damage)));
    return;
   }
   if(!targets.length)return;
