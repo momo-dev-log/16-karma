@@ -893,6 +893,8 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
 </script><style>
 /* Incoming forecast damage badge straddling the top edge of each ally card (overlay only). */
 .incoming-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
+/* Shift the ally photo down inside its unchanged frame so heads clear the badge. */
+.ally-face{object-position:50% 3px}
 .incoming-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #c77378;border-radius:4px;background:#23171ff2;color:#ffe3da;font-size:12px;font-weight:800;line-height:16px;white-space:nowrap;pointer-events:none}
 </style>
 <script>
@@ -914,7 +916,7 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
    const r=card.getBoundingClientRect(),badge=document.createElement('span');
    badge.className='incoming-badge';badge.textContent='被弾 '+totals[id];
    // 18px tall: 10px above the card's top edge, 8px over the photo; right edge 3px inside the card.
-   badge.style.top=(r.top-base.top-10)+'px';badge.style.right=(base.right-r.right+3)+'px';
+   badge.style.top=(r.top-base.top-10-6)+'px';badge.style.right=(base.right-r.right+3)+'px';
    return [badge];
   }));
  }
