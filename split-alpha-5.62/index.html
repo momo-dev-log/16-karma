@@ -554,16 +554,30 @@ const ids=['m','r','k'];
 const STATUS_ICONS={burn:'🔥',stun:'✦',curse:'◈',shock:'⚡',frost:'❄',poison:'☠'};
 function livingTargets(){return ids.filter(id=>chars[id].hp>0);}
 function attackTargets(f,i){return (f.targets||[]).filter(id=>chars[id].hp>0);}
+// Target weight per ally. All equal for now; add per-character weights here later.
+function targetWeight(id){return 1;}
+// Every random target pick goes through here: draw `count` distinct allies from `pool`, weighted, without replacement.
+function pickTargets(pool,count){
+ const left=[...pool],picked=[];
+ while(picked.length<count&&left.length){
+  const total=left.reduce((sum,id)=>sum+targetWeight(id),0);
+  let roll=Math.random()*total,index=0;
+  while(index<left.length-1&&(roll-=targetWeight(left[index]))>=0)index++;
+  picked.push(...left.splice(index,1));
+ }
+ return picked.sort((a,b)=>ids.indexOf(a)-ids.indexOf(b));
+}
 function chooseNextTargets(){
  const alive=livingTargets();
  foes.forEach((f,i)=>{
   if(!alive.length){f.targets=[];return;}
-  // UI prototype rotation: single, two-target range, and full-party attacks.
+  // Attack kind rotation (unchanged): single, two-target range, and full-party attacks; targets are random.
   const mode=(turn+i)%4;
   f.attackKind=mode===0?'all':mode===1?'range':'single';
   if(f.attackKind==='all')f.targets=[...alive];
-  else if(f.attackKind==='range')f.targets=alive.length>1?[...alive].sort((a,b)=>ids.indexOf(a)-ids.indexOf(b)).slice(i===2?-2:0,i===2?undefined:2):[alive[0]];
-  else f.targets=[alive[(turn+i)%alive.length]];
+  // Chosen when the forecast is made and stored on the part; the enemy phase attacks these same targets.
+  else if(f.attackKind==='range')f.targets=pickTargets(alive,2);
+  else f.targets=pickTargets(alive,1);
  });
 }
 // Forecast test (#preview=m|r|aoe): display-only override of the forecast panels; attacks still use attackTargets.
