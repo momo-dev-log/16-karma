@@ -41,6 +41,11 @@ class Battle{
   //   hpScale / breakScale default to bossScale. mods (policy additions, stage 2):
   //     reikaGuardFirst: Reika plays guard cards until her guard reaches weapon.guardNeed before anything else
   //     koharuPoisonFirst: Koharu prefers the attack card that adds the most poison per Cost
+  //   Stage 3 (all off by default):
+  //     dummyBoss: shared HP never reaches 0 (huge HP), so the battle runs to maxTurns and damage is never cut off
+  //     noAllyDamage: enemy attacks are forecast and resolved, but allies take no HP loss and no ailments
+  //     noAllStun: 禍's attack on turns where it would target everyone (turn % 4 === 0, always a stun turn)
+  //                becomes a single-target attack (its most common kind); everything else is unchanged
   constructor(opts){
     this.rng=makeRng(opts.seed);
     this.policy=opts.policy;
@@ -50,7 +55,8 @@ class Battle{
     this.turn=1;this.ended=false;this.won=false;
     const s=opts.bossScale||1,hs=opts.hpScale??s,bs=opts.breakScale??s;
     this.mods=opts.mods||{};
-    this.boss={hp:420*hs,max:420*hs};
+    this.noAllyDamage=!!opts.noAllyDamage;this.noAllStun=!!opts.noAllStun;
+    this.boss=opts.dummyBoss?{hp:1e12,max:1e12}:{hp:420*hs,max:420*hs};
     this.foes=BASE_FOES.map(f=>({...f,breakLimit:f.breakLimit*bs,breakDamage:0,broken:false,stunned:false,poison:0,plague:0,
       poisonBy:{card:0,weapon:0,bonus:0},plagueBy:{card:0,weapon:0,bonus:0},weak:0,statuses:{},targets:[],attackKind:'single'}));
     this.chars={};
@@ -63,7 +69,7 @@ class Battle{
     this.stats={damage:{m:0,r:0,k:0},weaponUses:{m:0,r:0,k:0}};
     // Detailed records (stage 2). Recording never changes the battle.
     this.st={effects:{m:{},r:{},k:{}},cards:{m:{},r:{},k:{}},breaks:[],fires:{m:[],r:[],k:[]},
-      direct:{m:0,r:0,k:0},poisonDmg:{card:0,weapon:0,bonus:0},plagueExtra:0,stunLost:{m:0,r:0,k:0},deadTurns:{m:0,r:0,k:0},kTurn:{}};
+      cum:{},direct:{m:0,r:0,k:0},poisonDmg:{card:0,weapon:0,bonus:0},plagueExtra:0,stunLost:{m:0,r:0,k:0},deadTurns:{m:0,r:0,k:0},kTurn:{}};
     this.curFire=null;
     this.chooseNextTargets();
   }
@@ -103,6 +109,7 @@ class Battle{
       if(!alive.length){f.targets=[];return;}
       const mode=(this.turn+i)%4;
       f.attackKind=mode===0?'all':mode===1?'range':'single';
+      if(this.noAllStun&&i===0&&f.attackKind==='all')f.attackKind='single';
       if(f.attackKind==='all')f.targets=[...alive];
       else if(f.attackKind==='range')f.targets=this.pickTargets(alive,2);
       else f.targets=this.pickTargets(alive,1);
@@ -253,7 +260,7 @@ class Battle{
     const incoming={},dueTargets=new Map();
     for(const {f,i} of due){const ids=this.attackTargets(f);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+this.modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,this.chars[id]));}
     const hits=Object.entries(incoming).map(([id,n])=>{const c=this.chars[id],blocked=Math.min(c.guard,n),actual=Math.min(c.hp,n-blocked);return {id,n,c,blocked,actual};});
-    for(const h of hits){h.c.guard-=h.blocked;h.c.hp=Math.max(0,h.c.hp-h.actual);this.log(`敵 → ${h.c.name} ${h.n}${h.blocked?`（盾${h.blocked}）`:''} → −${h.actual}（HP ${h.c.hp}）`);}
+    for(const h of hits){if(this.noAllyDamage){this.log(`敵 → ${h.c.name} ${h.n}（的の条件：受けない）`);h.actual=0;continue;}h.c.guard-=h.blocked;h.c.hp=Math.max(0,h.c.hp-h.actual);this.log(`敵 → ${h.c.name} ${h.n}${h.blocked?`（盾${h.blocked}）`:''} → −${h.actual}（HP ${h.c.hp}）`);}
     // poison per part, then wait / stun bookkeeping
     this.foes.forEach(f=>{
       const tick=f.poison+2*f.plague; // plague = 2x poison (simulator rule, not in index.html)
@@ -299,6 +306,8 @@ class Battle{
       for(const id of IDS){if(this.ended)break;this.allyTurn(this.chars[id]);}
       if(this.ended)break;
       this.endTurn();
+      // cumulative damage at the end of each turn (after that turn's poison)
+      this.st.cum[this.turn-1]={...this.stats.damage};
     }
     if(!this.ended)this.log('ターン上限で打ち切り');
     return {
