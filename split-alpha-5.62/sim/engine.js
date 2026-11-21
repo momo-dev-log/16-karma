@@ -33,8 +33,14 @@ const BASE_FOES=[
   {name:'灰',interval:1,wait:1,damage:8,target:'k',ailments:['frost','poison'],breakLimit:180}
 ];
 
+// Lexicographic comparison of choice keys (bigger wins).
+function keyGreater(a,b){for(let i=0;i<a.length;i++){if(a[i]>b[i])return true;if(a[i]<b[i])return false;}return false;}
+
 class Battle{
-  // opts: {seed, policy:'attack'|'defense', bossScale, weapons:{m,r,k} (from weapons.js), log:boolean, maxTurns, poisonValue}
+  // opts: {seed, policy:'attack'|'defense', bossScale, hpScale, breakScale, mods, weapons:{m,r,k} (from weapons.js), log:boolean, maxTurns, poisonValue}
+  //   hpScale / breakScale default to bossScale. mods (policy additions, stage 2):
+  //     reikaGuardFirst: Reika plays guard cards until her guard reaches weapon.guardNeed before anything else
+  //     koharuPoisonFirst: Koharu prefers the attack card that adds the most poison per Cost
   constructor(opts){
     this.rng=makeRng(opts.seed);
     this.policy=opts.policy;
@@ -42,9 +48,11 @@ class Battle{
     this.poisonValue=opts.poisonValue??3;
     this.logOn=!!opts.log;this.lines=[];this.actions=[];
     this.turn=1;this.ended=false;this.won=false;
-    const s=opts.bossScale||1;
-    this.boss={hp:420*s,max:420*s};
-    this.foes=BASE_FOES.map(f=>({...f,breakLimit:f.breakLimit*s,breakDamage:0,broken:false,stunned:false,poison:0,plague:0,weak:0,statuses:{},targets:[],attackKind:'single'}));
+    const s=opts.bossScale||1,hs=opts.hpScale??s,bs=opts.breakScale??s;
+    this.mods=opts.mods||{};
+    this.boss={hp:420*hs,max:420*hs};
+    this.foes=BASE_FOES.map(f=>({...f,breakLimit:f.breakLimit*bs,breakDamage:0,broken:false,stunned:false,poison:0,plague:0,
+      poisonBy:{card:0,weapon:0,bonus:0},plagueBy:{card:0,weapon:0,bonus:0},weak:0,statuses:{},targets:[],attackKind:'single'}));
     this.chars={};
     for(const id of IDS){
       const w=opts.weapons[id];
@@ -53,9 +61,18 @@ class Battle{
       if(w.init)w.init(this,this.chars[id]);
     }
     this.stats={damage:{m:0,r:0,k:0},weaponUses:{m:0,r:0,k:0}};
+    // Detailed records (stage 2). Recording never changes the battle.
+    this.st={effects:{m:{},r:{},k:{}},cards:{m:{},r:{},k:{}},breaks:[],fires:{m:[],r:[],k:[]},
+      direct:{m:0,r:0,k:0},poisonDmg:{card:0,weapon:0,bonus:0},plagueExtra:0,stunLost:{m:0,r:0,k:0},deadTurns:{m:0,r:0,k:0},kTurn:{}};
+    this.curFire=null;
     this.chooseNextTargets();
   }
   log(s){if(this.logOn)this.lines.push(`T${this.turn} ${s}`);}
+  // Weapon effect bookkeeping: how often an effect fired and how much damage it added.
+  effect(id,label,count=1,extra=0){const e=this.st.effects[id][label]||(this.st.effects[id][label]={count:0,extra:0});e.count+=count;e.extra+=extra;}
+  kTurn(){return this.st.kTurn[this.turn]||(this.st.kTurn[this.turn]={poison:0,direct:0});}
+  // What a plain hit of n on this part would deal (broken 1.2x), for "extra damage" bookkeeping.
+  plainDealt(n,partIndex){return this.foes[partIndex].broken?Math.round(n*1.2):n;}
 
   // ---- statuses: statusBag / addStatus / statusPower / tickStatuses ----
   addStatus(u,key,power,turns){
@@ -107,7 +124,7 @@ class Battle{
     const foe=this.foes[partIndex];
     const dealt=(!opts.noBroken&&foe.broken)?Math.round(n*1.2):n; // code: Math.round(n*1.2)
     const before=this.boss.hp;this.boss.hp=Math.max(0,this.boss.hp-dealt);
-    const actual=before-this.boss.hp;this.stats.damage[ownerId]+=actual;
+    const actual=before-this.boss.hp;this.stats.damage[ownerId]+=actual;this.st.direct[ownerId]+=actual;if(ownerId==='k')this.kTurn().direct+=actual;
     let broke=false;
     if(!opts.skipBreak)broke=this.addBreak(partIndex,opts.breakAmount??dealt);
     this.log(`${NAMES[ownerId]} → ${foe.name} ${dealt}${foe.broken&&!broke&&!opts.noBroken?'（壊れた部位1.2倍）':''}${broke?' 【部位破壊】':''} 共有HP ${this.boss.hp}`);
@@ -118,29 +135,30 @@ class Battle{
     const foe=this.foes[partIndex];
     if(foe.broken)return false;
     foe.breakDamage=Math.min(foe.breakLimit,foe.breakDamage+amount);
-    if(foe.breakDamage>=foe.breakLimit){foe.broken=true;foe.stunned=true;foe.wait=foe.interval;return true;}
+    if(foe.breakDamage>=foe.breakLimit){foe.broken=true;foe.stunned=true;foe.wait=foe.interval;this.st.breaks.push({part:partIndex,turn:this.turn});return true;}
     return false;
   }
   finish(won){if(!this.ended){this.ended=true;this.won=won;this.endTurnNo=this.turn;this.log(won?'勝利':'敗北');}}
 
   // ---- target choice (policy, not game code) ----
   // Once a part is broken, keep hitting a broken part (1.2x); otherwise the unbroken part closest to breaking.
-  choosePart(){
-    const broken=this.foes.map((f,i)=>i).filter(i=>this.foes[i].broken);
+  // exclude (stage 2, optional): a part index that must not be chosen.
+  choosePart(exclude=-1){
+    const broken=this.foes.map((f,i)=>i).filter(i=>this.foes[i].broken&&i!==exclude);
     if(broken.length)return broken[0]; // ASSUMPTION: several broken parts -> lowest index
-    let best=0,bestKey=null;
-    this.foes.forEach((f,i)=>{const key=[f.breakDamage/f.breakLimit,-(f.breakLimit-f.breakDamage)];
+    let best=exclude===0?1:0,bestKey=null;
+    this.foes.forEach((f,i)=>{if(i===exclude)return;const key=[f.breakDamage/f.breakLimit,-(f.breakLimit-f.breakDamage)];
       if(bestKey===null||key[0]>bestKey[0]||key[0]===bestKey[0]&&key[1]>bestKey[1]){best=i;bestKey=key;}});
     return best;
   }
 
   // ---- cards: play() ----
-  cardBaseDamage(c,card){
+  cardBaseDamage(c,card,withWeapon=true){
     const [,, ,dmg,effect]=card;let damage=dmg;
     // play(): ifM / ifAlly read the static foe.target field ('m','r','k'), not the forecast targets.
     if(effect==='ifM'&&this.foes.some(f=>this.boss.hp>0&&f.target==='m'&&f.wait===1))damage+=20;
     if(effect==='ifAlly'&&this.foes.some(f=>this.boss.hp>0&&f.target!=='m'&&f.wait===1))damage+=20;
-    if(c.weapon.cardBonus)damage+=c.weapon.cardBonus(this,c,card);
+    if(withWeapon&&c.weapon.cardBonus)damage+=c.weapon.cardBonus(this,c,card);
     return damage;
   }
   cardPlayable(c,i){
@@ -156,27 +174,35 @@ class Battle{
     const part=this.choosePart(),foe=this.foes[part];
     this.actions.push({t:'card',id:c.id,i,part});
     if(c.hp<=0){this.log(`${c.name} 倒れた（呪詛）`);this.afterCard(c);return;}
+    this.st.cards[c.id][cardId]=(this.st.cards[c.id][cardId]||0)+1;
     let damage=this.cardBaseDamage(c,card);
-    const g=CARD_GUARD[effect];if(g)c.guard+=g+(c.weapon.guardBonus||0);
+    const g=CARD_GUARD[effect];if(g){c.guard+=g+(c.weapon.guardBonus||0);if(c.weapon.guardBonus)this.effect(c.id,'盾の上乗せ',1,0);}
     if(CARD_WEAK[effect])foe.weak=(foe.weak||0)+CARD_WEAK[effect];
-    if(CARD_POISON[effect])this.addPoison(c,part,CARD_POISON[effect]);
+    if(CARD_POISON[effect])this.addPoison(c,part,CARD_POISON[effect],'card');
+    const plain=this.modifiedDamage(this.cardBaseDamage(c,card,false),c,foe),plainDealt=this.plainDealt(plain,part);
     damage=this.modifiedDamage(damage,c,foe); // foe never has burn here
     if(c.weapon.cardDamage)damage=c.weapon.cardDamage(this,c,part,damage);
     this.log(`${c.name}：${name}（Cost${cost}）${g?` 盾+${g+(c.weapon.guardBonus||0)}`:''}${CARD_POISON[effect]?` 毒+${CARD_POISON[effect]}`:''} チャージ${c.charge}/${c.weapon.ch}`);
     const res=this.hitPart(damage,c.id,part);
+    if(res.dealt!==plainDealt)this.effect(c.id,c.weapon.cardEffectLabel||'カード攻撃の上乗せ',1,res.dealt-plainDealt);
     if(c.weapon.afterCardHit)c.weapon.afterCardHit(this,c,part,damage,res);
     this.afterCard(c);
   }
   afterCard(c){if(c.weapon.afterCard)c.weapon.afterCard(this,c);}
-  addPoison(c,part,n){
+  addPoison(c,part,n,src='card'){
     // Poison is stored per part (foe.poison) in index.html; Koharu's mythic turns it into plague.
-    if(c.weapon.plague)this.foes[part].plague+=n;else this.foes[part].poison+=n;
+    // src ('card'|'weapon') and the weapon's poisonBonus ('bonus') are tracked only for the records.
+    const f=this.foes[part],bonus=c.weapon.poisonBonus||0;
+    const add=(k,amount)=>{if(!amount)return;if(c.weapon.plague){f.plague+=amount;f.plagueBy[k]+=amount;}else{f.poison+=amount;f.poisonBy[k]+=amount;}};
+    add(src,n);add('bonus',bonus);
+    if(bonus)this.effect(c.id,'毒の数+1',1,0);
   }
 
   // ---- weapon: render() #weaponuse handler ----
   weaponReady(c){return !this.ended&&c.hp>0&&c.charge>=c.weapon.ch&&!this.sp(c,'stun')&&!this.sp(c,'shock');}
   fireWeapon(c){
     c.charge=0;this.stats.weaponUses[c.id]++;
+    this.curFire={turn:this.turn,guard:c.guard,bites:c.ws.bites};this.st.fires[c.id].push(this.curFire);
     this.log(`${c.name} 武器技「${c.weapon.name}」`);
     if(c.weapon.fire)c.weapon.fire(this,c);
     else{const part=this.choosePart();this.actions.push({t:'weapon',id:c.id,part});this.hitPart(c.weapon.base,c.id,part);}
@@ -186,7 +212,7 @@ class Battle{
   // ---- ally turn (policy) ----
   cardValue(c,i){
     const card=HANDS[c.id][i];
-    const pois=CARD_POISON[card[4]]||0;
+    const pois=(CARD_POISON[card[4]]||0)+(CARD_POISON[card[4]]?(c.weapon.poisonBonus||0):0);
     return this.cardBaseDamage(c,card)+pois*this.poisonValue*(c.weapon.plague?2:1);
   }
   bestCard(c,kind){
@@ -196,15 +222,21 @@ class Battle{
       if(kind==='guard'!==isGuard||!this.cardPlayable(c,i))return;
       const v=kind==='guard'?CARD_GUARD[card[4]]:this.cardValue(c,i);
       const key=[v/card[2],v,-i];
-      if(bestKey===null||key[0]>bestKey[0]||key[0]===bestKey[0]&&(key[1]>bestKey[1]||key[1]===bestKey[1]&&key[2]>bestKey[2])){best=i;bestKey=key;}
+      if(kind==='attack'&&c.id==='k'&&this.mods.koharuPoisonFirst)key.unshift((CARD_POISON[card[4]]||0)/card[2]);
+      if(bestKey===null||keyGreater(key,bestKey)){best=i;bestKey=key;}
     });
     return best;
   }
   allyTurn(c){
-    if(c.hp<=0)return;
+    if(c.hp<=0){this.st.deadTurns[c.id]++;return;}
+    if(this.sp(c,'stun'))this.st.stunLost[c.id]++;
     const fireIfReady=()=>{while(this.weaponReady(c))this.fireWeapon(c);};
+    let guardedFirst=false;
+    if(this.mods.reikaGuardFirst&&c.id==='r'&&c.weapon.guardNeed){
+      while(!this.ended&&c.guard<c.weapon.guardNeed){const g=this.bestCard(c,'guard');if(g<0)break;this.playCard(c,g);guardedFirst=true;}
+    }
     fireIfReady();
-    if(this.policy==='defense'&&this.attackTargetsAny(c.id)&&this.forecastTo(c.id)>=10){
+    if(!guardedFirst&&this.policy==='defense'&&this.attackTargetsAny(c.id)&&this.forecastTo(c.id)>=10){
       const g=this.bestCard(c,'guard');if(g>=0&&!this.ended){this.playCard(c,g);fireIfReady();}
     }
     for(const kind of ['attack','guard']){
@@ -225,7 +257,9 @@ class Battle{
     // poison per part, then wait / stun bookkeeping
     this.foes.forEach(f=>{
       const tick=f.poison+2*f.plague; // plague = 2x poison (simulator rule, not in index.html)
-      if(this.boss.hp>0&&tick>0){const loss=Math.min(this.boss.hp,tick);this.boss.hp-=loss;this.stats.damage.k+=loss;this.log(`${f.name} 毒${f.poison}${f.plague?`・疫毒${f.plague}`:''} → −${loss} 共有HP ${this.boss.hp}`);}
+      if(this.boss.hp>0&&tick>0){const loss=Math.min(this.boss.hp,tick);this.boss.hp-=loss;this.stats.damage.k+=loss;
+        for(const k of ['card','weapon','bonus'])this.st.poisonDmg[k]+=loss*(f.poisonBy[k]+2*f.plagueBy[k])/tick;
+        this.st.plagueExtra+=loss*f.plague/tick;this.kTurn().poison+=loss;this.log(`${f.name} 毒${f.poison}${f.plague?`・疫毒${f.plague}`:''} → −${loss} 共有HP ${this.boss.hp}`);}
       f.weak=0;
       const wasStunned=!!f.stunned||!!this.sp(f,'stun');
       this.tick(f);
@@ -270,7 +304,8 @@ class Battle{
     return {
       won:this.won,turns:this.ended?this.endTurnNo:this.maxTurns,timeout:!this.ended,
       damage:{...this.stats.damage},weaponUses:{...this.stats.weaponUses},
-      endHp:IDS.map(id=>this.chars[id].hp),lines:this.lines,actions:this.actions
+      endHp:IDS.map(id=>this.chars[id].hp),lines:this.lines,actions:this.actions,st:this.st,
+      endPoison:this.foes.reduce((a,f)=>a+f.poison,0),endPlague:this.foes.reduce((a,f)=>a+f.plague,0)
     };
   }
 }
