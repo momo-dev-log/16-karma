@@ -470,10 +470,10 @@
 .boss-part:nth-of-type(2) .boss-point-icon{left:78%;top:17%}
 .boss-part:nth-of-type(3) .boss-point-icon{left:38%;top:57%}
 </style></head><body><main id="app"><header class="header"><b>十六業</b><span id="turn">TURN 1 · 戦闘UI検証</span></header><section class="arena" id="arena"><button type="button" class="foe-status" id="forecast-hold" aria-label="押している間、味方別の攻撃予告合計を表示" aria-controls="forecast-summary" aria-expanded="false">😈</button><svg class="links" id="links"></svg><div class="foe" id="foe"><div class="foe-name">影の守護者</div><div class="sigil" id="sigil">禍</div><div class="enemy-hp"><i id="enemybar"></i></div><div class="enemy-num" id="enemyhp"></div></div><div class="allies" id="allies"></div></section><section class="lower"><div class="lower-head"><span id="handname"></span><button class="info-link" id="info" aria-label="攻撃予告の詳細" title="攻撃予告の詳細">ⓘ</button></div><div class="battle-context equipment-strip" aria-label="選択キャラの装備">
-      <div class="weapon" id="weapon"></div>
+      <div class="karma-panel" id="karma"></div>
       <div class="relic-column"><span class="equip-caption">遺物</span><div class="compact-relic"><button type="button" class="equipment-tile relic-tile" id="relicinspect" aria-label="遺物1の詳細を確認"><span class="equip-art relic-art relic-art-one" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3 32 16 27 32 20 37 13 32 8 16Z" fill="#3c3449" stroke="#baa4cc" stroke-width="2"/><path d="M20 8 26 18 20 31 14 18Z" fill="#8c78a2" opacity=".8"/></svg></span></button><button type="button" class="equipment-tile relic-tile" id="relicinspect2" aria-label="遺物2の詳細を確認"><span class="equip-art relic-art relic-art-two" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#4d3d2e" stroke="#c3a57a" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="#8e7046" stroke="#e2c99b" stroke-width="1.5"/></svg></span></button></div></div>
     </div>
-    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：武器技と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section>
+    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：業の欄と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section><section id="karma-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>業テスト（仮）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="kt-target" style="background:#252234;color:white"><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="kt-depth" style="background:#252234;color:white"><option value="0">深さ0</option><option value="1">深さ1</option><option value="2">深さ2</option><option value="3">深さ3</option></select><button id="kt-set-depth" type="button">深さを設定</button><button id="kt-force" type="button">業札を使える状態にする</button><button id="kt-recoil" type="button">反動をこのターンに出す</button><button id="kt-reset" type="button">元に戻す</button></div><div style="margin-top:5px;color:#bdb3ca">「使える状態」は狙われていなくても業札を押せるようにし、このターンの1枚の制限も外す（元に戻すまで続く）。</div></section>
 <script>
 'use strict';
 const PORTRAITS={"m": "assets/asset-06.png", "r": "assets/asset-07.png", "k": "assets/asset-08.png"};
@@ -592,8 +592,8 @@ function forecastView(f,i){
 function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max;});}
 let attackQueue=Promise.resolve(),pendingAttacks=0,turnClosing=false;const foeFx=new Map(),dyingFoes=new Set();const maxEnemy=420,targets={m:12,k:8},$=id=>document.getElementById(id),say=s=>$('log').textContent=s;
 function render(){ $('turn').textContent=`TURN ${turn} · 戦闘UI検証`;renderFoes();
-$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:3},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
-const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta"><span class="weapon-label">${active==='m'?'デコミニチェンソー':active==='r'?'クラシック銃':'毒の武器'}</span><span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;say(c.name+'の武器技：'+originalWeapons[id].damage+'ダメージ');queueAttack(originalWeapons[id].damage,id);render()};$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
+$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:3},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}${typeof karmaGuardSuffix==='function'?karmaGuardSuffix(id):''}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
+const c=chars[active];$('handname').textContent='';renderKarmaPanel();$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])||(typeof karmaCardBlocked==='function'&&karmaCardBlocked(active))?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
 function renderFoes(){
  const host=$('foe');host.classList.add('foe-multi','boss-unified');
  host.innerHTML=`<div class="boss-parts"><img class="boss-art" src="assets/asset-09.png" alt="" aria-hidden="true">${foes.map((f,i)=>`<button type="button" class="foe-unit boss-part ${selectedFoe===i?'chosen':''} ${f.stunned?'part-stunned':''}" data-foe="${i}" aria-label="${f.glyph}を狙う" aria-pressed="${selectedFoe===i}"><span class="boss-point-icon ${f.broken?'is-broken':''} ${selectedFoe===i?'is-selected':''}" aria-hidden="true"><span class="boss-point-star">✦</span>${f.broken?'<span class="boss-point-crack"></span>':''}</span></button>`).join('')}</div><div class="boss-hp"><div class="boss-hp-name">禍呪灰</div><div class="boss-hp-track"><i style="width:${boss.hp/boss.max*100}%"></i></div><div class="boss-hp-caption"><span>HP ${boss.hp} / ${boss.max}</span></div></div>`;
@@ -657,7 +657,10 @@ function drawLines(){
    const yy=mid+(j-1)*chevronGap;
    svg.append(make('path',{d:`M ${x-15} ${yy-5} L ${x} ${yy+3} L ${x+15} ${yy-5}`,fill:'none',stroke:'#f04f4d','stroke-width':4.8,'stroke-linejoin':'miter',opacity:j===2?'0.95':j===1?'0.65':'0.38'}));
   }
-  svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
+  // Who is actually hit and for how much, per ally (karma may redirect or steal hits). Read by the badges and the hold summary.
+  const hitIds=typeof karmaHitTargets==='function'?karmaHitTargets(f,i,targets):targets;
+  const hits=hitIds.map(id=>id+':'+modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[id])).join(',');
+  svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-hits':hits,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
   const iconSize=20, gap=3, count=targets.length;
   // One row (icons, damage, ailment icon) centered in the panel horizontally and vertically.
   const iconTop=labelY-iconSize/2;
@@ -678,6 +681,10 @@ function drawLines(){
   else if(icons.length)left+=5-gap;
   damageText.setAttribute('x',left);left+=damageWidth;
   if(effectText)effectText.setAttribute('x',left+4);
+  // Small karma marks: Mio's dot on the part she struck, Koharu's line under the number of the attack she took.
+  const marks=typeof karmaPanelMarks==='function'?karmaPanelMarks(i):{};
+  if(marks.m)svg.append(make('circle',{cx:x-width/2+7,cy:labelY-14,r:3,fill:FACE_BORDER.m}));
+  if(marks.k){const dx=Number(damageText.getAttribute('x'));svg.append(make('line',{x1:dx,x2:dx+damageWidth,y1:labelY+10,y2:labelY+10,stroke:FACE_BORDER.k,'stroke-width':1.6,'stroke-linecap':'round'}));}
  });
 }
 
@@ -760,7 +767,7 @@ function applyCurseOnCard(unit,cost){
  const actual=Math.min(unit.hp,loss);unit.hp-=actual;return actual;
 }
 function modifiedDamage(base,attacker,target){
- return Math.max(0,Math.round(Math.max(0,base-statusPower(attacker,'frost'))*(1+statusPower(target,'burn')/100)));
+ return Math.max(0,Math.round(Math.max(0,base-statusPower(attacker,'frost'))*(1+statusPower(target,'burn')/100)*(typeof karmaDamageScale==='function'?karmaDamageScale(target):1)));
 }
 function isElectroBlocked(unit,cardId){
  const shock=statusBag(unit).shock;
@@ -771,7 +778,8 @@ async function play(i){
  const foe=foes[selectedFoe];if(!foe||foe.hp<=0)return;
  if(isElectroBlocked(c,cardList.filter(y=>y[1]===id)[i]?.[0])){say(c.name+'：感電でカード使用不可');return;}
  if(statusPower(c,'stun')){say(c.name+'はスタン中');return;}
- c.cost-=x[1];c.charge=Math.min(originalWeapons[id].charge,c.charge+x[1]);
+ if(typeof karmaCardBlocked==='function'&&karmaCardBlocked(id)){say(c.name+'：反動で、このターンはもう札を使えない');return;}
+ c.cost-=x[1];
  const curseLoss=applyCurseOnCard(c,x[1]);if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
  const effect=x[5];let damage=x[2];
  if(effect==='ifM'&&foes.some(f=>f.hp>0&&f.target==='m'&&f.wait===1))damage+=20;
@@ -786,8 +794,10 @@ async function play(i){
  if(effect==='poison2')foe.poison+=2;
  if(effect==='poisonweak')foe.weak=(foe.weak||0)+8;
  if(effect==='poisonguard')c.guard+=25;
+ const karmaBonus=typeof karmaTakeBonus==='function'?karmaTakeBonus(id):0;damage+=karmaBonus;
  damage=modifiedDamage(damage,c,foe);
- say(c.name+'：'+x[0]+' → '+damage+'ダメージ');queueAttack(damage,id);render();
+ const karmaNote=typeof karmaAfterCard==='function'?karmaAfterCard(id,foe,karmaBonus):'';
+ say(c.name+'：'+x[0]+' → '+damage+'ダメージ'+karmaNote);queueAttack(damage,id);render();
 }
 const weaponDescriptions={
  m:{name:'デコ・ミニチェンソー',description:'武器技：敵に100ダメージ\n必要チャージ：6'},
@@ -810,7 +820,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  if(ended){turnClosing=false;render();return;}
  resolving=true;$('end').disabled=true;
  // Snapshot target positions and HP bars. Do not rebuild the panels until the impact has played.
- const due=foes.map((f,i)=>({f,i})).filter(({f})=>f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun'));const incoming={};const dueTargets=new Map();due.forEach(({f,i})=>{const ids=attackTargets(f,i);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[id]));});const hits=Object.entries(incoming).map(([id,n])=>{
+ const due=foes.map((f,i)=>({f,i})).filter(({f})=>f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun'));const incoming={};const dueTargets=new Map();due.forEach(({f,i})=>{const ids=typeof karmaHitTargets==='function'?karmaHitTargets(f,i,attackTargets(f,i)):attackTargets(f,i);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[id]));});if(typeof karmaBeforeImpact==='function')karmaBeforeImpact();const hits=Object.entries(incoming).map(([id,n])=>{
   const c=chars[id],blocked=Math.min(c.guard,n),actual=Math.min(c.hp,n-blocked);
   return {id,n,c,blocked,actual,el:document.querySelector(`.ally[data-id="${id}"]`)};
  });
@@ -829,7 +839,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  hits.forEach(h=>{
   h.c.guard-=h.blocked;h.c.hp=Math.max(0,h.c.hp-h.actual);
   const bar=h.el?.querySelector('.hpbar i');if(bar)bar.style.width=(h.c.hp/h.c.max*100)+'%';
-  const health=h.el?.querySelector('.health');if(health)health.innerHTML=`<span>HP ${h.c.hp}/${h.c.max}</span><span>盾 ${h.c.guard}</span>`;
+  const health=h.el?.querySelector('.health');if(health)health.innerHTML=`<span>HP ${h.c.hp}/${h.c.max}</span><span>盾 ${h.c.guard}${typeof karmaGuardSuffix==='function'?karmaGuardSuffix(h.id):''}</span>`;
  });
  await new Promise(resolve=>setTimeout(resolve,540));
  // Poison resolves once at the end of the enemy phase, independently per surviving enemy.
@@ -862,6 +872,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
     });
 
  });
+ if(typeof karmaNewTurn==='function')inflicted.push(...karmaNewTurn());
  resolving=false;turnClosing=false;
  const defeated=Object.values(chars).every(c=>c.hp===0);
  if(defeated)ended=true;
@@ -916,7 +927,7 @@ function fitAllyStatuses(){
  });
 }
 function statusEntries(u){
- const entries=Object.entries(statusBag(u)).map(([k,v])=>`${statusNames[k]||k}${k==='shock'?'（武器技・先頭カード不可）':k==='stun'?'（行動不可）':k==='burn'?'（被ダメ+'+v.power+'%）':k==='frost'?'（与ダメ-'+v.power+'）':k==='curse'?'（Cost消費でHP減少）':' '+v.power} / 残${v.turns}T`);
+ const entries=Object.entries(statusBag(u)).map(([k,v])=>`${statusNames[k]||k}${k==='shock'?'（業の欄・先頭カード不可）':k==='stun'?'（行動不可）':k==='burn'?'（被ダメ+'+v.power+'%）':k==='frost'?'（与ダメ-'+v.power+'）':k==='curse'?'（Cost消費でHP減少）':' '+v.power} / 残${v.turns}T`);
  if(u.poison>0)entries.unshift(`毒 ${u.poison}（毎ターン）`);
  if(u.weak>0)entries.push(`攻撃軽減 ${u.weak}（今ターン）`);
  return entries;
@@ -941,6 +952,136 @@ $('st-clear').onclick=()=>{
  unit.statuses={};unit.poison=0;
  render();drawLines();say('テスト：'+(target==='foe'?'禍呪灰「'+unit.glyph+'」':unit.name)+'の状態異常を解除');
 };
+// ===== 業 (karma) prototype: replaces the weapon box. All numbers are provisional. =====
+// Weapon data (charge, originalWeapons, weaponDescriptions) stays defined but is no longer shown or used.
+// Code that tests run in isolation calls these functions only when they exist ("no karma" otherwise).
+var karma={m:{depth:0,recoil:false,recoilNext:false,force:false},r:{depth:0,recoil:false,recoilNext:false,force:false},k:{depth:0,recoil:false,recoilNext:false,force:false}};
+function freshKarmaTurn(){return {used:false,steal:null,stealAmount:0,cover:false,reikaDouble:false,koharuBonus:0,give:0,mioCards:0,mioPart:null};}
+var karmaTurn=freshKarmaTurn();
+var karmaPick=null; // {who, options:[part index]} while Mio / Koharu chooses a part after pressing the karma card
+var KARMA_INFO={
+ m:{card:'業札',cardDesc:'狙ってくる部位に60',face:'誰も消させない',faceDesc:'攻撃を全部受ける・盾+20×深さ',recoil:'札は2枚まで'},
+ r:{card:'業札：この程度、私には届かない',cardDesc:'受ける瞬間、盾×2',face:'分ける',faceDesc:'盾を味方に分ける',recoil:'盾が半分'},
+ k:{card:'業札：よこせ',cardDesc:'攻撃を1つ奪い、次の攻撃に足す',face:'あげる',faceDesc:'このあとの攻撃に毒+深さ',recoil:'被ダメ1.5倍'}
+};
+const KARMA_GIVE_SCALE=[0,.5,1,1.5]; // Reika "分ける": share of her shield by depth
+// Parts that attack this turn with a face forecast (charge-up "?" panels excluded).
+function karmaDueParts(){return foes.map((f,i)=>i).filter(i=>{const f=foes[i];return boss.hp>0&&f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun');});}
+function karmaTargetingParts(id){return karmaDueParts().filter(i=>attackTargets(foes[i],i).includes(id));}
+function karmaBlocked(id){const c=chars[id];return ended||resolving||turnClosing||!c||c.hp<=0||!!statusPower(c,'stun')||!!statusPower(c,'shock');}
+function karmaCardOptions(id){const parts=karmaTargetingParts(id);return parts.length||!karma[id].force?parts:karmaDueParts();}
+function karmaCanUseCard(id){
+ if(karmaBlocked(id)||karmaPick||karmaTurn.used&&!karma[id].force)return false;
+ if(!karmaTargetingParts(id).length&&!karma[id].force)return false;
+ return id==='r'||karmaCardOptions(id).length>0;
+}
+function karmaCanUseFace(id){return karma[id].depth>=1&&!karmaPick&&!karmaBlocked(id);}
+function karmaRefresh(){render();drawLines();}
+function useKarmaCard(id){
+ if(!karmaCanUseCard(id))return;
+ if(id==='r'){finishKarmaCard(id,null);return;}
+ const options=karmaCardOptions(id);
+ if(options.length===1){finishKarmaCard(id,options[0]);return;}
+ karmaPick={who:id,options};karmaRefresh();
+ say(chars[id].name+'：'+(id==='m'?'業札で攻撃する部位を選ぶ':'奪う攻撃を選ぶ'));
+}
+function finishKarmaCard(id,part){
+ const s=karma[id],c=chars[id];karmaPick=null;
+ karmaTurn.used=true;s.depth=Math.min(3,s.depth+1);s.recoilNext=true;
+ if(id==='m'){
+  karmaTurn.mioPart=part;
+  say(`美桜：業札 → ${foes[part].glyph}に60（壊れる量+120）・業の深さ${s.depth}`);
+  karmaStrike(60,'m',part);
+ }else if(id==='r'){
+  karmaTurn.reikaDouble=true;
+  say(`麗華：業札 → 敵の攻撃を受ける瞬間、盾×2・業の深さ${s.depth}`);
+ }else{
+  const f=foes[part],amount=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,c);
+  karmaTurn.steal=part;karmaTurn.stealAmount=amount;karmaTurn.koharuBonus+=amount;
+  say(`小春：業札 → ${f.glyph}の攻撃を奪う（次の小春の攻撃+${amount}）・業の深さ${s.depth}`);
+ }
+ karmaRefresh();
+}
+function useKarmaFace(id){
+ if(!karmaCanUseFace(id))return;
+ const s=karma[id],d=s.depth;s.depth=0;s.recoil=false;s.recoilNext=false;
+ if(id==='m'){
+  karmaTurn.cover=true;chars.m.guard+=d*20;
+  say(`美桜：誰も消させない（深さ${d}）→ このターンの攻撃をすべて美桜が受ける・盾+${d*20}・反動は止まった`);
+ }else if(id==='r'){
+  const add=Math.floor(chars.r.guard*KARMA_GIVE_SCALE[d]),to=ids.filter(x=>x!=='r'&&chars[x].hp>0);
+  to.forEach(x=>chars[x].guard+=add);
+  say(`麗華：分ける（深さ${d}）→ ${to.map(x=>chars[x].name).join('・')||'なし'}に盾+${add}・反動は止まった`);
+ }else{
+  karmaTurn.give+=d;
+  say(`小春：あげる（深さ${d}）→ このターン、味方のカード攻撃のたびに部位へ毒+${d}・反動は止まった`);
+ }
+ karmaRefresh();
+}
+// Mio's karma strike: same HP loss and queue as a normal attack on a chosen part; break progress counts double.
+// playerAttack adds the dealt amount once, so the extra half is added first (a broken part never accumulates).
+function karmaStrike(n,id,foeIndex){
+ const foe=foes[foeIndex];if(!foe||foe.hp<=0)return;
+ if(!foe.broken)foe.breakDamage=Math.min(foe.breakLimit,foe.breakDamage+n);
+ pendingAttacks++;
+ const p=playerAttack(n,id,foeIndex).finally(()=>{pendingAttacks--;});
+ attackQueue=Promise.all([attackQueue,p]).then(()=>{});
+}
+// Hooks used by the battle code.
+function karmaHitTargets(f,i,targets){
+ let t=targets;
+ if(karmaTurn.steal===i)t=t.filter(id=>id!=='k');
+ if(karmaTurn.cover&&chars.m.hp>0&&t.some(id=>id!=='m'))t=['m'];
+ return t;
+}
+function karmaDamageScale(target){return target===chars.k&&karma.k.recoil?1.5:1;}
+function karmaBeforeImpact(){
+ const r=chars.r,scale=(karmaTurn.reikaDouble?2:1)*(karma.r.recoil?.5:1);
+ if(r.hp>0&&scale!==1)r.guard=Math.floor(r.guard*scale);
+}
+function karmaGuardSuffix(id){return id==='r'&&karma.r.recoil?'½':'';}
+function karmaCardBlocked(id){return id==='m'&&karma.m.recoil&&karmaTurn.mioCards>=2;}
+function karmaTakeBonus(id){if(id!=='k'||!karmaTurn.koharuBonus)return 0;const n=karmaTurn.koharuBonus;karmaTurn.koharuBonus=0;return n;}
+function karmaAfterCard(id,foe,bonus){
+ if(id==='m')karmaTurn.mioCards++;
+ const notes=[];
+ if(bonus)notes.push('奪った分+'+bonus);
+ if(karmaTurn.give>0&&foe){foe.poison+=karmaTurn.give;notes.push('あげる：毒+'+karmaTurn.give);}
+ return notes.length?'（'+notes.join('・')+'）':'';
+}
+function karmaPanelMarks(i){return {m:karmaTurn.mioPart===i,k:karmaTurn.steal===i};}
+function karmaReikaMarked(){return karmaTurn.reikaDouble;}
+function karmaNewTurn(){
+ const notes=[];
+ ids.forEach(id=>{
+  const s=karma[id];s.recoil=s.recoilNext||s.depth>=3;s.recoilNext=false;
+  if(s.recoil&&chars[id].hp>0)notes.push(`${chars[id].name}：反動（${KARMA_INFO[id].recoil}）`);
+ });
+ karmaTurn=freshKarmaTurn();karmaPick=null;
+ return notes;
+}
+function renderKarmaPanel(){
+ const id=active,c=chars[id],s=karma[id],info=KARMA_INFO[id],el=$('karma');
+ const tags=[s.recoil?'反動':'',s.depth>=3?'業に呑まれた':''].filter(Boolean).join('・');
+ const dots=Array.from({length:3},(_,i)=>`<i class="${i<s.depth?'filled':''}" style="${i<s.depth?'background:'+FACE_BORDER[id]+';border-color:'+FACE_BORDER[id]:''}"></i>`).join('');
+ const picking=karmaPick&&karmaPick.who===id&&!ended&&!resolving&&!turnClosing;
+ const actions=picking
+  ?`<div class="karma-pick"><span>${id==='m'?'どの部位に？':'どの攻撃を奪う？'}</span>${karmaPick.options.map(i=>`<button type="button" data-karma-part="${i}">${foes[i].glyph}</button>`).join('')}<button type="button" data-karma-cancel>やめる</button></div>`
+  :`<button type="button" class="karma-card" id="karmacard" ${karmaCanUseCard(id)?'':'disabled'}><b>${info.card}</b><small>${info.cardDesc}</small></button><button type="button" class="karma-face" id="karmaface" ${karmaCanUseFace(id)?'':'disabled'}><b>${info.face}</b><small>${info.faceDesc}</small></button>`;
+ el.innerHTML=`<div class="karma-head"><span class="karma-name">${c.name}の業</span><span class="karma-depth" aria-label="業の深さ ${s.depth}/3">${dots}</span><span class="karma-tag">${tags}</span></div>${actions}`;
+ if(picking){
+  el.querySelectorAll('[data-karma-part]').forEach(b=>b.onclick=()=>{if(karmaPick&&!karmaBlocked(karmaPick.who))finishKarmaCard(karmaPick.who,Number(b.dataset.karmaPart));});
+  el.querySelector('[data-karma-cancel]').onclick=()=>{karmaPick=null;karmaRefresh();say('業札をやめた');};
+ }else{
+  $('karmacard').onclick=()=>useKarmaCard(id);
+  $('karmaface').onclick=()=>useKarmaFace(id);
+ }
+}
+// 業テスト panel.
+$('kt-set-depth').onclick=()=>{const id=$('kt-target').value,d=Number($('kt-depth').value);karma[id].depth=d;karmaRefresh();say(`テスト：${chars[id].name}の業の深さを${d}にした`);};
+$('kt-force').onclick=()=>{const id=$('kt-target').value;karma[id].force=true;karmaTurn.used=false;karmaRefresh();say(`テスト：${chars[id].name}の業札を使える状態にした`);};
+$('kt-recoil').onclick=()=>{const id=$('kt-target').value;karma[id].recoil=true;karmaRefresh();say(`テスト：${chars[id].name}に反動（${KARMA_INFO[id].recoil}）`);};
+$('kt-reset').onclick=()=>{ids.forEach(id=>Object.assign(karma[id],{depth:0,recoil:false,recoilNext:false,force:false}));karmaPick=null;karmaRefresh();say('テスト：業を元に戻した（全員 深さ0・反動なし）');};
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
 /* Hold summary only: keep the existing arena, arrows and forecast layout. */
@@ -962,10 +1103,12 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
   // Read the exact values used for the visible panels; never recalculate attacks.
   const totals=Object.fromEntries(ids.map(id=>[id,{damage:0,effects:new Map()}]));
   links.querySelectorAll('[data-forecast-targets]').forEach(preview=>{
-   const {forecastTargets,forecastDamage,forecastEffect,forecastIcon}=preview.dataset;
-   forecastTargets.split(',').forEach(id=>{
+   const {forecastTargets,forecastDamage,forecastHits,forecastEffect,forecastIcon}=preview.dataset;
+   // Per-ally hits (after karma) when present; otherwise every target takes the panel number.
+   const hits=forecastHits!==undefined?forecastHits.split(',').filter(Boolean).map(p=>p.split(':')):forecastTargets.split(',').map(id=>[id,forecastDamage]);
+   hits.forEach(([id,amount])=>{
     const total=totals[id];if(!total)return;
-    total.damage+=Number(forecastDamage);
+    total.damage+=Number(amount);
     if(forecastEffect&&forecastIcon){
      const effect=total.effects.get(forecastEffect)||{icon:forecastIcon,count:0};
      effect.count++;total.effects.set(forecastEffect,effect);
@@ -1029,8 +1172,9 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
   // Same source and sum as the forecast hold summary: the visible panels' data-forecast-* values.
   const totals=Object.fromEntries(ids.map(id=>[id,0]));
   links.querySelectorAll('[data-forecast-targets]').forEach(preview=>{
-   const {forecastTargets,forecastDamage}=preview.dataset;
-   forecastTargets.split(',').forEach(id=>{if(id in totals)totals[id]+=Number(forecastDamage)});
+   const {forecastTargets,forecastDamage,forecastHits}=preview.dataset;
+   if(forecastHits!==undefined)forecastHits.split(',').filter(Boolean).forEach(p=>{const [id,amount]=p.split(':');if(id in totals)totals[id]+=Number(amount)});
+   else forecastTargets.split(',').forEach(id=>{if(id in totals)totals[id]+=Number(forecastDamage)});
   });
   const base=arena.getBoundingClientRect();
   layer.replaceChildren(...[...allies.querySelectorAll('.ally[data-id]')].flatMap(card=>{
@@ -1038,6 +1182,8 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
    if(!(totals[id]>0)||!(chars[id]?.hp>0))return [];
    const r=card.getBoundingClientRect(),badge=document.createElement('span');
    badge.className='incoming-badge';badge.textContent='被弾 '+totals[id];
+   // Reika's karma card: a small dot in her color at the start of her badge.
+   if(id==='r'&&typeof karmaReikaMarked==='function'&&karmaReikaMarked()){const dot=document.createElement('i');dot.className='karma-badge-dot';badge.prepend(dot);}
    // 18px tall: 10px above the card's top edge, 8px over the photo; right edge 3px inside the card.
    badge.style.top=(r.top-base.top-10-6)+'px';badge.style.right=(base.right-r.right+3)+'px';
    return [badge];
@@ -1227,7 +1373,26 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  },true);
  document.addEventListener('contextmenu',e=>{if(e.target.closest?.('.ally-status'))e.preventDefault()},true);
 })();
-</script><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
+</script><style>
+/* 業の欄: takes the old weapon box's place and box look (same strip cell, background, border, radius). */
+.equipment-strip .karma-panel{display:flex;flex-direction:column;gap:3px;min-width:0;background:#25212b;border:1px solid #62545f;border-radius:5px;font-size:11px;overflow:hidden}
+.karma-head{display:flex;align-items:center;align-self:stretch;gap:6px;height:14px;min-width:0}
+.karma-name{font-size:10px;color:#e9d7d6;white-space:nowrap}
+.karma-depth{display:flex;gap:4px;align-items:center}
+.karma-depth i{display:block;width:9px;height:9px;border-radius:50%;border:1px solid #766a78;background:#2a2730;box-sizing:border-box}
+.karma-tag{margin-left:auto;font-size:9px;color:#efbd91;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.karma-panel button{appearance:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;width:100%;min-width:0;padding:2px 6px;border:1px solid #b69a73;border-radius:4px;background:#493a3c;color:#f5ede4;text-align:left;font:inherit}
+.karma-panel button b{font-size:10px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.karma-panel button small{font-size:9px;line-height:1.2;color:#d6c3c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.karma-panel button:disabled{opacity:.42;filter:saturate(.4)}
+.karma-card{flex:1 1 0;min-height:0}
+.karma-face{flex:1 1 0;min-height:0}
+.karma-pick{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:10px;color:#efbd91}
+.karma-pick span{width:100%}
+.karma-pick button{width:auto;flex:1 1 0;align-items:center;min-height:26px;font-size:12px;font-weight:700}
+/* Reika's karma card mark on her incoming badge. */
+.karma-badge-dot{display:inline-block;width:5px;height:5px;margin-right:3px;border-radius:50%;background:#7281b3;vertical-align:middle;position:relative;top:-1px}
+</style><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
  <button id="preview-toggle" type="button" style="background:#4d3659;color:white;border:1px solid #b989eb;border-radius:8px;padding:8px;">予告テスト</button>
  <div id="preview-options" hidden style="background:#211a2b;border:1px solid #b989eb;border-radius:9px;padding:8px;margin-top:5px;display:none;gap:5px;flex-wrap:wrap;max-width:290px;">
  <button data-preview="m">美桜集中</button><button data-preview="r">麗華集中</button><button data-preview="aoe">全体</button><button data-preview="off">元に戻す</button>
