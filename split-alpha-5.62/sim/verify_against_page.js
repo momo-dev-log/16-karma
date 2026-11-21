@@ -1,11 +1,14 @@
 'use strict';
-// Cross-check: replay the simulator's actions (baseline weapons) in the real game page and compare the state
+// Cross-check: replay the simulator's actions (prototype weapons as the page starts with them) in the real game page and compare the state
 // at the start of every turn. Uses the Playwright that is preinstalled in this environment (no new package).
 // Usage: node sim/verify_against_page.js [seeds=6]
 const path=require('node:path'),http=require('node:http'),fs=require('node:fs');
 const {chromium}=require('playwright');
 const {Battle}=require('./engine');
-const {BASELINE}=require('./weapons');
+const {BASELINE,makeWeapon}=require('./weapons');
+const {factories:F,withPlainRef}=require('./variants');
+// The page now starts Mio with the prototype common weapon (card attacks +3); the other two keep the prototype weapons.
+const MIO_DEFAULT=makeWeapon(withPlainRef(F.mCommon({hp:0,card:3})),5);
 
 const root=path.join(__dirname,'..');
 function serve(){return new Promise(res=>{const srv=http.createServer((req,rsp)=>{const f=path.join(root,decodeURIComponent(req.url.split('?')[0]).replace(/^\/+/,'')||'index.html');
@@ -18,7 +21,7 @@ function serve(){return new Promise(res=>{const srv=http.createServer((req,rsp)=
   const browser=await chromium.launch();
   let compared=0,mismatches=0,errors=0;
   for(const policy of ['attack','defense'])for(const scale of [3,10])for(let seed=0;seed<seeds;seed++){
-    const sim=new Battle({seed,policy,bossScale:scale,weapons:{m:{...BASELINE.m},r:{...BASELINE.r},k:{...BASELINE.k}},maxTurns:40}).run();
+    const sim=new Battle({seed,policy,bossScale:scale,weapons:{m:{...MIO_DEFAULT},r:{...BASELINE.r},k:{...BASELINE.k}},maxTurns:40}).run();
     const page=await browser.newPage({viewport:{width:360,height:800}});
     page.on('pageerror',()=>errors++);
     // Same RNG as the simulator (mulberry32); the page uses Math.random only in pickTargets.

@@ -473,7 +473,7 @@
       <div class="weapon" id="weapon"></div>
       <div class="relic-column"><span class="equip-caption">遺物</span><div class="compact-relic"><button type="button" class="equipment-tile relic-tile" id="relicinspect" aria-label="遺物1の詳細を確認"><span class="equip-art relic-art relic-art-one" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3 32 16 27 32 20 37 13 32 8 16Z" fill="#3c3449" stroke="#baa4cc" stroke-width="2"/><path d="M20 8 26 18 20 31 14 18Z" fill="#8c78a2" opacity=".8"/></svg></span></button><button type="button" class="equipment-tile relic-tile" id="relicinspect2" aria-label="遺物2の詳細を確認"><span class="equip-art relic-art relic-art-two" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#4d3d2e" stroke="#c3a57a" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="#8e7046" stroke="#e2c99b" stroke-width="1.5"/></svg></span></button></div></div>
     </div>
-    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：武器技と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section>
+    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：武器技と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section><section id="mio-weapon-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>美桜の武器（試作・品質5）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><button type="button" data-mio-weapon="common">コモン</button><button type="button" data-mio-weapon="epic">エピック</button><button type="button" data-mio-weapon="mythic">ミシック</button></div><div style="margin-top:5px;color:#bdb3ca">戦闘中でも持ち替えられる（試作だけの決まり）。持ち替えるとチャージと食い込みは0に戻る。</div><div id="mio-weapon-current" style="margin-top:5px;line-height:1.5;white-space:pre-wrap"></div></section>
 <script>
 'use strict';
 const PORTRAITS={"m": "assets/asset-06.png", "r": "assets/asset-07.png", "k": "assets/asset-08.png"};
@@ -592,8 +592,8 @@ function forecastView(f,i){
 function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max;});}
 let attackQueue=Promise.resolve(),pendingAttacks=0,turnClosing=false;const foeFx=new Map(),dyingFoes=new Set();const maxEnemy=420,targets={m:12,k:8},$=id=>document.getElementById(id),say=s=>$('log').textContent=s;
 function render(){ $('turn').textContent=`TURN ${turn} · 戦闘UI検証`;renderFoes();
-$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:3},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
-const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta"><span class="weapon-label">${active==='m'?'デコミニチェンソー':active==='r'?'クラシック銃':'毒の武器'}</span><span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;say(c.name+'の武器技：'+originalWeapons[id].damage+'ダメージ');queueAttack(originalWeapons[id].damage,id);render()};$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
+$('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:Math.max(3,c.cost)},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
+const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta${active==='m'&&typeof mioWeaponLabel==='function'?' mio-meta':''}"><span class="weapon-label">${active==='m'?(typeof mioWeaponLabel==='function'?mioWeaponLabel():'デコミニチェンソー'):active==='r'?'クラシック銃':'毒の武器'}</span>${active==='m'&&typeof mioWeaponShort==='function'?`<span class="weapon-desc">${mioWeaponShort()}</span>`:''}<span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}${active==='m'&&typeof mioBitesText==='function'?mioBitesText():''}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;const n=typeof weaponFireDamage==='function'?weaponFireDamage(id):originalWeapons[id].damage;queueAttack(n,id);const note=typeof weaponAfterFire==='function'?weaponAfterFire(id):'';say(c.name+'の武器技：'+n+'ダメージ'+note);render()};$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
 function renderFoes(){
  const host=$('foe');host.classList.add('foe-multi','boss-unified');
  host.innerHTML=`<div class="boss-parts"><img class="boss-art" src="assets/asset-09.png" alt="" aria-hidden="true">${foes.map((f,i)=>`<button type="button" class="foe-unit boss-part ${selectedFoe===i?'chosen':''} ${f.stunned?'part-stunned':''}" data-foe="${i}" aria-label="${f.glyph}を狙う" aria-pressed="${selectedFoe===i}"><span class="boss-point-icon ${f.broken?'is-broken':''} ${selectedFoe===i?'is-selected':''}" aria-hidden="true"><span class="boss-point-star">✦</span>${f.broken?'<span class="boss-point-crack"></span>':''}</span></button>`).join('')}</div><div class="boss-hp"><div class="boss-hp-name">禍呪灰</div><div class="boss-hp-track"><i style="width:${boss.hp/boss.max*100}%"></i></div><div class="boss-hp-caption"><span>HP ${boss.hp} / ${boss.max}</span></div></div>`;
@@ -786,8 +786,10 @@ async function play(i){
  if(effect==='poison2')foe.poison+=2;
  if(effect==='poisonweak')foe.weak=(foe.weak||0)+8;
  if(effect==='poisonguard')c.guard+=25;
+ const weaponBonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=weaponBonus;
  damage=modifiedDamage(damage,c,foe);
- say(c.name+'：'+x[0]+' → '+damage+'ダメージ');queueAttack(damage,id);render();
+ queueAttack(damage,id);const weaponNote=typeof mioAfterCardHit==='function'?mioAfterCardHit(id,weaponBonus):'';
+ say(c.name+'：'+x[0]+' → '+damage+'ダメージ'+weaponNote);render();
 }
 const weaponDescriptions={
  m:{name:'デコ・ミニチェンソー',description:'武器技：敵に100ダメージ\n必要チャージ：6'},
@@ -796,7 +798,7 @@ const weaponDescriptions={
 };
 function showWeaponDetails(){
  const c=chars[active],w=weaponDescriptions[active];
- dialog(c.name+'｜'+w.name,w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+'\n\n※本編の正式な武器効果は未接続です。');
+ dialog(c.name+'｜'+w.name,w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+(active==='m'&&typeof mioWeaponLabel==='function'?'\n\n※試作の効果です（品質5）。':'\n\n※本編の正式な武器効果は未接続です。'));
 }
 function showRelicDetails(slot=1){
  dialog(chars[active].name+'｜遺物 '+slot,'現在の戦闘UI試作には、遺物の装備データ・効果がまだ接続されていません。\n\n本編接続後は、選択中のキャラに関係する遺物の名前・効果・発動条件をここに表示します。\n\n※確認だけではターンやコストは進みません。');
@@ -941,6 +943,64 @@ $('st-clear').onclick=()=>{
  unit.statuses={};unit.poison=0;
  render();drawLines();say('テスト：'+(target==='foe'?'禍呪灰「'+unit.glyph+'」':unit.name)+'の状態異常を解除');
 };
+// ===== 美桜の武器（試作）=====
+// Values and effects follow the simulator (sim/variants.js) at quality 5:
+//   common = m-common:card3, epic = m-epic:now, mythic = m-mythic:ch8-noregain.
+// Base value = min + floor((max-min)*(quality-1)/9). Descriptions are built from these numbers.
+// Battle code calls these functions only when they exist, so code run in isolation keeps the plain weapon.
+const MIO_QUALITY=5;
+const MIO_WEAPONS={
+ common:{rarity:'コモン',name:'デコ・ミニチェンソー',min:92,max:110,ch:6,cardBonus:3},
+ epic:{rarity:'エピック',name:'再点火のソー',min:100,max:122,ch:6,reigniteCost:1},
+ mythic:{rarity:'ミシック',name:'食い込みの鋸',min:98,max:120,ch:8,bite:{max:8,perCard:3,perFire:10}}
+};
+function weaponBaseValue(w,q){return w.min+Math.floor((w.max-w.min)*(q-1)/9);}
+var mioWeaponKey='common',mioBites=0,mioReigniteTurn=0,mioLastBites=0;
+function mioWeapon(){return MIO_WEAPONS[mioWeaponKey];}
+function mioWeaponLabel(){const w=mioWeapon();return `${w.rarity}｜${w.name}`;}
+// One short line for the weapon box.
+function mioWeaponShort(){const w=mioWeapon();
+ if(w.cardBonus)return `カード攻撃+${w.cardBonus}`;
+ if(w.reigniteCost)return `武器技のターン Cost+${w.reigniteCost}（1回）`;
+ return `食い込み1つ カード+${w.bite.perCard}・技+${w.bite.perFire}`;}
+// Full description (long-press on the weapon picture, the weapon dialog and the test panel).
+function mioWeaponDescription(){const w=mioWeapon(),base=weaponBaseValue(w,MIO_QUALITY);
+ if(w.cardBonus)return `武器技：敵に${base}ダメージ\n必要チャージ：${w.ch}\n効果：美桜のカード攻撃のダメージ+${w.cardBonus}`;
+ if(w.reigniteCost)return `武器技：敵に${base}ダメージ\n必要チャージ：${w.ch}\n効果：武器技を撃ったターン、美桜のCost+${w.reigniteCost}（1ターン1回）。増えたCostで使ったカードも、普通どおりチャージがたまる`;
+ const b=w.bite;return `武器技：敵に${base}＋食い込み×${b.perFire}ダメージ（撃つと食い込みは0に戻る）\n必要チャージ：${w.ch}\n効果：美桜の攻撃が当たるたびに食い込み+1（上限${b.max}、ターンをまたいで残る。武器技の1発ではたまらない）。食い込み1つにつき、美桜のカード攻撃+${b.perCard}\n今の食い込み：${mioBites}`;}
+function mioBitesText(){const w=mioWeapon();return w.bite?`・食い込み ${mioBites}/${w.bite.max}`:'';}
+function mioRefreshDescription(){const w=mioWeapon();weaponDescriptions.m={name:w.name,description:mioWeaponDescription()};
+ const el=document.getElementById('mio-weapon-current');if(el)el.textContent=`いま：${mioWeaponLabel()}（基礎値${weaponBaseValue(w,MIO_QUALITY)}）\n${mioWeaponDescription()}`;
+ document.querySelectorAll('[data-mio-weapon]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mioWeapon===mioWeaponKey)));}
+function equipMioWeapon(key){
+ const w=MIO_WEAPONS[key];mioWeaponKey=key;mioBites=0;mioReigniteTurn=0;
+ originalWeapons.m.name=w.name;originalWeapons.m.charge=w.ch;originalWeapons.m.damage=weaponBaseValue(w,MIO_QUALITY);
+ chars.m.weapon=w.name;chars.m.charge=0;mioRefreshDescription();
+}
+function mioFlash(){const el=document.getElementById('weapon');if(!el)return;el.classList.remove('weapon-proc');void el.offsetWidth;el.classList.add('weapon-proc');setTimeout(()=>el.classList.remove('weapon-proc'),950);}
+// Hooks used by play() and the weapon button.
+function mioWeaponCardBonus(id){if(id!=='m')return 0;const w=mioWeapon();return w.cardBonus||(w.bite?mioBites*w.bite.perCard:0);}
+function mioAfterCardHit(id,bonus){
+ if(id!=='m')return '';const w=mioWeapon();
+ if(w.bite){const before=mioBites;mioBites=Math.min(w.bite.max,mioBites+1);mioRefreshDescription();
+  return `（${bonus?`食い込み${before}で+${bonus}・`:''}食い込み ${mioBites}/${w.bite.max}）`;}
+ return bonus?`（武器 +${bonus}）`:'';
+}
+function weaponFireDamage(id){
+ const base=originalWeapons[id].damage;if(id!=='m')return base;const w=mioWeapon();
+ mioLastBites=w.bite?mioBites:0;return base+mioLastBites*(w.bite?w.bite.perFire:0);
+}
+function weaponAfterFire(id){
+ if(id!=='m')return '';const w=mioWeapon();
+ if(w.bite){const used=mioLastBites;mioBites=0;mioRefreshDescription();if(used){mioFlash();return `（食い込み${used}を乗せて+${used*w.bite.perFire}・食い込み 0/${w.bite.max}）`;}return '';}
+ if(w.reigniteCost&&mioReigniteTurn!==turn){mioReigniteTurn=turn;chars.m.cost+=w.reigniteCost;mioFlash();return `（再点火：美桜のCost+${w.reigniteCost} → ${chars.m.cost}）`;}
+ return '';
+}
+document.querySelectorAll('[data-mio-weapon]').forEach(b=>b.onclick=()=>{
+ if(resolving||turnClosing){say('敵の行動中は持ち替えられない');return;}
+ equipMioWeapon(b.dataset.mioWeapon);render();say(`テスト：美桜の武器を「${mioWeapon().name}」（${mioWeapon().rarity}）に持ち替えた。チャージは0に戻った`);
+});
+equipMioWeapon('common');
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
 /* Hold summary only: keep the existing arena, arrows and forecast layout. */
@@ -1073,7 +1133,7 @@ function display(id){
  const c=chars[active];if(!c)return;
  if(id==='weaponinspect'){
   const w=weaponDescriptions[active];title.textContent=c.name+'｜'+w.name;
-  body.textContent=w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+'\n\n※正式な武器効果は未接続です。';
+  body.textContent=w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[active].charge+(active==='m'&&typeof mioWeaponLabel==='function'?'\n\n※試作の効果です（品質5）。':'\n\n※正式な武器効果は未接続です。');
  }else{
   const slot=id==='relicinspect'?1:2;
   title.textContent=c.name+'｜遺物 '+slot;
@@ -1227,7 +1287,20 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  },true);
  document.addEventListener('contextmenu',e=>{if(e.target.closest?.('.ally-status'))e.preventDefault()},true);
 })();
-</script><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
+</script><style>
+/* 美桜の武器（試作）: four short rows inside the unchanged weapon box (label / effect / charge circles / status). */
+.equipment-strip .weapon-meta.mio-meta{gap:1px!important;justify-content:flex-start!important}
+.equipment-strip .mio-meta .weapon-label{line-height:13px!important;white-space:nowrap!important;overflow:hidden;text-overflow:ellipsis}
+.equipment-strip .mio-meta .weapon-desc{display:block;width:100%;font-size:9px;line-height:11px;color:#d6c3c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.equipment-strip .mio-meta .weapon-segments{gap:4px!important;height:10px}
+.equipment-strip .mio-meta .weapon-segments i{width:10px!important;height:10px!important}
+.equipment-strip .mio-meta .weapon-status{line-height:12px!important;font-size:9px!important}
+#mio-weapon-test [data-mio-weapon][aria-pressed="true"]{outline:2px solid #e9c98a;outline-offset:1px}
+/* A short glow when a weapon effect fires. */
+@keyframes weapon-proc{0%{box-shadow:0 0 0 1px #e9c98a,0 0 10px #e9c98a99}100%{box-shadow:none}}
+.weapon.weapon-proc{animation:weapon-proc .9s ease-out}
+@media (prefers-reduced-motion:reduce){.weapon.weapon-proc{animation:none;outline:1px solid #e9c98a}}
+</style><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
  <button id="preview-toggle" type="button" style="background:#4d3659;color:white;border:1px solid #b989eb;border-radius:8px;padding:8px;">予告テスト</button>
  <div id="preview-options" hidden style="background:#211a2b;border:1px solid #b989eb;border-radius:9px;padding:8px;margin-top:5px;display:none;gap:5px;flex-wrap:wrap;max-width:290px;">
  <button data-preview="m">美桜集中</button><button data-preview="r">麗華集中</button><button data-preview="aoe">全体</button><button data-preview="off">元に戻す</button>

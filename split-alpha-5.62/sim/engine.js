@@ -211,7 +211,7 @@ class Battle{
     c.charge=0;this.stats.weaponUses[c.id]++;
     this.curFire={turn:this.turn,guard:c.guard,bites:c.ws.bites};this.st.fires[c.id].push(this.curFire);
     this.log(`${c.name} 武器技「${c.weapon.name}」`);
-    if(c.weapon.fire)c.weapon.fire(this,c);
+    if(c.weapon.fire){this.actions.push({t:'weapon',id:c.id,part:this.choosePart()});c.weapon.fire(this,c);}
     else{const part=this.choosePart();this.actions.push({t:'weapon',id:c.id,part});this.hitPart(c.weapon.base,c.id,part);}
     if(c.weapon.afterFire)c.weapon.afterFire(this,c);
   }
