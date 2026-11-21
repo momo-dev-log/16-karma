@@ -578,6 +578,9 @@ function chooseNextTargets(){
   // Chosen when the forecast is made and stored on the part; the enemy phase attacks these same targets.
   else if(f.attackKind==='range')f.targets=pickTargets(alive,2);
   else f.targets=pickTargets(alive,1);
+  // The forecast is a promise: the enemy side of this turn's attack (targets, base damage, ailment) is fixed here
+  // and the attack uses exactly this. Ally-side reductions (guard, card weakening, burn on the target) apply when it lands.
+  f.plan={targets:f.targets,damage:f.damage,ailment:f.ailments?.[(turn-1)%f.ailments.length]||null};
  });
 }
 // Forecast test (#preview=m|r|aoe): display-only override of the forecast panels; attacks still use attackTargets.
@@ -645,8 +648,11 @@ function drawLines(){
    return;
   }
   if(!targets.length)return;
-  const damage=modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[targets[0]]);
-  const effect=f.ailments?.[(turn-1)%f.ailments.length];
+  // Damage per target (burn differs by target); the plan gives the base damage and the ailment.
+  const planBase=f.plan?f.plan.damage:f.damage;
+  const perTarget=targets.map(id=>modifiedDamage(Math.max(0,planBase-(f.weak||0)),f,chars[id]));
+  const damage=perTarget[0],same=perTarget.every(n=>n===damage);
+  const effect=f.plan?f.plan.ailment:f.ailments?.[(turn-1)%f.ailments.length];
   // Anchor the forecast panel above the ally portraits, not near the boss.
   const labelY=bottom-34;
   const width=Math.min(rect.width/3-6,112);
@@ -657,7 +663,7 @@ function drawLines(){
    const yy=mid+(j-1)*chevronGap;
    svg.append(make('path',{d:`M ${x-15} ${yy-5} L ${x} ${yy+3} L ${x+15} ${yy-5}`,fill:'none',stroke:'#f04f4d','stroke-width':4.8,'stroke-linejoin':'miter',opacity:j===2?'0.95':j===1?'0.65':'0.38'}));
   }
-  svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
+  svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#23171ff2',stroke:'#c77378','stroke-width':1.4,'data-forecast-targets':targets.join(','),'data-forecast-damage':damage,'data-forecast-hits':targets.map((id,k)=>id+':'+perTarget[k]).join(','),'data-forecast-effect':effect||'','data-forecast-icon':symbols[effect]||''}));
   const iconSize=20, gap=3, count=targets.length;
   // One row (icons, damage, ailment icon) centered in the panel horizontally and vertically.
   const iconTop=labelY-iconSize/2;
@@ -665,16 +671,23 @@ function drawLines(){
   const icons=allLabel?[]:targets.map(id=>[make('image',{y:iconTop,width:iconSize,height:iconSize,href:PORTRAITS[id],preserveAspectRatio:'xMidYMid slice'}),make('rect',{y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:FACE_BORDER[id]||'#bca6a5','stroke-width':1.2})]);
   icons.forEach(pair=>svg.append(...pair));
   if(allLabel)svg.append(allLabel);
-  const damageText=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(damage));
+  // Same damage for everyone: one number (as before). Different damage: each face gets its own number; 全体 shows the range.
+  const perFace=!same&&icons.length>1;
+  const damageText=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},same?String(damage):perFace?String(perTarget[perTarget.length-1]):`${Math.min(...perTarget)}〜${Math.max(...perTarget)}`);
   svg.append(damageText);
+  const faceNumbers=perFace?perTarget.slice(0,-1).map(n=>make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(n))):[];
+  faceNumbers.forEach(t=>svg.append(t));
   const effectText=effect?make('text',{y:labelY,'dominant-baseline':'central','font-size':14,fill:'#f5c7b8'},symbols[effect]||''):null;
   if(effectText)svg.append(effectText);
   const damageWidth=damageText.getComputedTextLength(),effectWidth=effectText?effectText.getComputedTextLength():0;
-  const leadWidth=allLabel?allLabel.getComputedTextLength():icons.length?icons.length*iconSize+(icons.length-1)*gap:0;
-  const rowWidth=leadWidth+(leadWidth?5:0)+damageWidth+(effectText?4+effectWidth:0);
+  const faceNumWidth=faceNumbers.reduce((a,t)=>a+t.getComputedTextLength()+2+6,0);
+  const leadWidth=allLabel?allLabel.getComputedTextLength():icons.length?icons.length*iconSize+(icons.length-1)*gap+(perFace?faceNumWidth-(icons.length-1)*gap:0):0;
+  const rowWidth=leadWidth+(leadWidth?(perFace?2:5):0)+damageWidth+(effectText?4+effectWidth:0);
   let left=x-rowWidth/2;
-  icons.forEach(pair=>{pair.forEach(el=>el.setAttribute('x',left));left+=iconSize+gap;});
+  icons.forEach((pair,k)=>{pair.forEach(el=>el.setAttribute('x',left));left+=iconSize+(perFace?0:gap);
+   if(perFace&&k<faceNumbers.length){left+=2;faceNumbers[k].setAttribute('x',left);left+=faceNumbers[k].getComputedTextLength()+6;}});
   if(allLabel){allLabel.setAttribute('x',left);left+=leadWidth+5;}
+  else if(perFace)left+=2;
   else if(icons.length)left+=5-gap;
   damageText.setAttribute('x',left);left+=damageWidth;
   if(effectText)effectText.setAttribute('x',left+4);
@@ -813,7 +826,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  if(ended){turnClosing=false;render();return;}
  resolving=true;$('end').disabled=true;
  // Snapshot target positions and HP bars. Do not rebuild the panels until the impact has played.
- const due=foes.map((f,i)=>({f,i})).filter(({f})=>f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun'));const incoming={};const dueTargets=new Map();due.forEach(({f,i})=>{const ids=attackTargets(f,i);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,chars[id]));});const hits=Object.entries(incoming).map(([id,n])=>{
+ const due=foes.map((f,i)=>({f,i,plan:f.plan})).filter(({f})=>f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun'));const incoming={};const dueTargets=new Map();due.forEach(({f,i,plan})=>{const ids=attackTargets(f,i);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+modifiedDamage(Math.max(0,(plan?plan.damage:f.damage)-(f.weak||0)),f,chars[id]));});const hits=Object.entries(incoming).map(([id,n])=>{
   const c=chars[id],blocked=Math.min(c.guard,n),actual=Math.min(c.hp,n-blocked);
   return {id,n,c,blocked,actual,el:document.querySelector(`.ally[data-id="${id}"]`)};
  });
@@ -852,12 +865,12 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  // Existing effects expire before the next player phase; new enemy effects are applied afterwards.
  turn++;Object.values(chars).forEach(c=>{if(c.poison>0&&!(typeof testNoDamage!=='undefined'&&testNoDamage))c.hp=Math.max(0,c.hp-c.poison);tickStatuses(c);c.cost=c.hp>0?3:0;c.guard=0});chooseNextTargets();
  const inflicted=[];
-  due.forEach(({f,i})=>{
+  due.forEach(({f,i,plan})=>{
     const ids=dueTargets.get(i)||[];
     ids.forEach(id=>{
       const h=hits.find(h=>h.id===id);
       if(!h||h.actual<=0||h.c.hp<=0)return;
-      const key=f.ailments?.[(turn-2)%f.ailments.length];if(!key)return;
+      const key=plan?plan.ailment:f.ailments?.[(turn-2)%f.ailments.length];if(!key)return;
       if(key==='poison')h.c.poison=(h.c.poison||0)+2;
       else {
         addStatus(h.c,key,key==='burn'?25:key==='frost'?10:1,2);
@@ -1052,10 +1065,12 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
   // Read the exact values used for the visible panels; never recalculate attacks.
   const totals=Object.fromEntries(ids.map(id=>[id,{damage:0,effects:new Map()}]));
   links.querySelectorAll('[data-forecast-targets]').forEach(preview=>{
-   const {forecastTargets,forecastDamage,forecastEffect,forecastIcon}=preview.dataset;
+   const {forecastTargets,forecastDamage,forecastHits,forecastEffect,forecastIcon}=preview.dataset;
+   // Per-target damage when present (data-forecast-hits "id:n,..."), otherwise the panel number for everyone.
+   const hit=Object.fromEntries((forecastHits||'').split(',').filter(Boolean).map(p=>p.split(':')));
    forecastTargets.split(',').forEach(id=>{
     const total=totals[id];if(!total)return;
-    total.damage+=Number(forecastDamage);
+    total.damage+=Number(hit[id]??forecastDamage);
     if(forecastEffect&&forecastIcon){
      const effect=total.effects.get(forecastEffect)||{icon:forecastIcon,count:0};
      effect.count++;total.effects.set(forecastEffect,effect);
@@ -1119,8 +1134,9 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
   // Same source and sum as the forecast hold summary: the visible panels' data-forecast-* values.
   const totals=Object.fromEntries(ids.map(id=>[id,0]));
   links.querySelectorAll('[data-forecast-targets]').forEach(preview=>{
-   const {forecastTargets,forecastDamage}=preview.dataset;
-   forecastTargets.split(',').forEach(id=>{if(id in totals)totals[id]+=Number(forecastDamage)});
+   const {forecastTargets,forecastDamage,forecastHits}=preview.dataset;
+   const hit=Object.fromEntries((forecastHits||'').split(',').filter(Boolean).map(p=>p.split(':')));
+   forecastTargets.split(',').forEach(id=>{if(id in totals)totals[id]+=Number(hit[id]??forecastDamage)});
   });
   const base=arena.getBoundingClientRect();
   layer.replaceChildren(...[...allies.querySelectorAll('.ally[data-id]')].flatMap(card=>{

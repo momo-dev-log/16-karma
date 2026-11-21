@@ -113,6 +113,8 @@ class Battle{
       if(f.attackKind==='all')f.targets=[...alive];
       else if(f.attackKind==='range')f.targets=this.pickTargets(alive,2);
       else f.targets=this.pickTargets(alive,1);
+      // index.html chooseNextTargets: the forecast is a promise (targets, base damage, ailment fixed here).
+      f.plan={targets:f.targets,damage:f.damage,ailment:f.ailments[(this.turn-1)%f.ailments.length]};
     });
   }
   attackTargets(f){return f.targets.filter(id=>this.chars[id].hp>0);}
@@ -120,7 +122,7 @@ class Battle{
   // Forecast damage to one ally this turn (what the "被弾 N" badge sums).
   forecastTo(id){
     const c=this.chars[id];let sum=0;
-    for(const i of this.dueParts()){const f=this.foes[i];if(this.attackTargets(f).includes(id))sum+=this.modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,c);}
+    for(const i of this.dueParts()){const f=this.foes[i];if(this.attackTargets(f).includes(id))sum+=this.modifiedDamage(Math.max(0,(f.plan?f.plan.damage:f.damage)-(f.weak||0)),f,c);}
     return sum;
   }
 
@@ -256,9 +258,9 @@ class Battle{
   endTurn(){
     this.actions.push({t:'end'});
     for(const id of IDS){const w=this.chars[id].weapon;if(w.endPlayerPhase)w.endPlayerPhase(this,this.chars[id]);}
-    const due=this.dueParts().map(i=>({f:this.foes[i],i}));
+    const due=this.dueParts().map(i=>({f:this.foes[i],i,plan:this.foes[i].plan}));
     const incoming={},dueTargets=new Map();
-    for(const {f,i} of due){const ids=this.attackTargets(f);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+this.modifiedDamage(Math.max(0,f.damage-(f.weak||0)),f,this.chars[id]));}
+    for(const {f,i,plan} of due){const ids=this.attackTargets(f);dueTargets.set(i,ids);ids.forEach(id=>incoming[id]=(incoming[id]||0)+this.modifiedDamage(Math.max(0,plan.damage-(f.weak||0)),f,this.chars[id]));}
     const hits=Object.entries(incoming).map(([id,n])=>{const c=this.chars[id],blocked=Math.min(c.guard,n),actual=Math.min(c.hp,n-blocked);return {id,n,c,blocked,actual};});
     for(const h of hits){if(this.noAllyDamage){this.log(`敵 → ${h.c.name} ${h.n}（的の条件：受けない）`);h.actual=0;continue;}h.c.guard-=h.blocked;h.c.hp=Math.max(0,h.c.hp-h.actual);this.log(`敵 → ${h.c.name} ${h.n}${h.blocked?`（盾${h.blocked}）`:''} → −${h.actual}（HP ${h.c.hp}）`);}
     // poison per part, then wait / stun bookkeeping
@@ -280,11 +282,11 @@ class Battle{
       this.tick(c);c.cost=c.hp>0?3:0;c.guard=0;
     }
     this.chooseNextTargets();
-    for(const {f,i} of due){
+    for(const {f,i,plan} of due){
       for(const id of dueTargets.get(i)||[]){
         const h=hits.find(h=>h.id===id);
         if(!h||h.actual<=0||h.c.hp<=0)continue;
-        const key=f.ailments[(this.turn-2)%f.ailments.length];
+        const key=plan.ailment;
         if(key==='poison')h.c.poison+=2;
         else{this.addStatus(h.c,key,key==='burn'?25:key==='frost'?10:1,2);if(key==='shock')h.c.statuses.shock.blockedCards=[{m:'M1',r:'R1',k:'K1'}[id]];}
         this.log(`${h.c.name}：${AILMENT_NAMES[key]}`);
