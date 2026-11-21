@@ -473,7 +473,7 @@
       <div class="weapon" id="weapon"></div>
       <div class="relic-column"><span class="equip-caption">遺物</span><div class="compact-relic"><button type="button" class="equipment-tile relic-tile" id="relicinspect" aria-label="遺物1の詳細を確認"><span class="equip-art relic-art relic-art-one" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3 32 16 27 32 20 37 13 32 8 16Z" fill="#3c3449" stroke="#baa4cc" stroke-width="2"/><path d="M20 8 26 18 20 31 14 18Z" fill="#8c78a2" opacity=".8"/></svg></span></button><button type="button" class="equipment-tile relic-tile" id="relicinspect2" aria-label="遺物2の詳細を確認"><span class="equip-art relic-art relic-art-two" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="#4d3d2e" stroke="#c3a57a" stroke-width="3"/><circle cx="20" cy="20" r="8" fill="#8e7046" stroke="#e2c99b" stroke-width="1.5"/></svg></span></button></div></div>
     </div>
-    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：武器技と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section><section id="mio-weapon-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>美桜の武器（試作・品質5）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><button type="button" data-mio-weapon="common">コモン</button><button type="button" data-mio-weapon="epic">エピック</button><button type="button" data-mio-weapon="mythic">ミシック</button></div><div style="margin-top:5px;color:#bdb3ca">戦闘中でも持ち替えられる（試作だけの決まり）。持ち替えるとチャージと食い込みは0に戻る。</div><div id="mio-weapon-current" style="margin-top:5px;line-height:1.5;white-space:pre-wrap"></div></section>
+    <div class="cards" id="cards"></div><div class="actions"><button class="end" id="end" aria-label="ターン終了・敵の行動へ">ターン終了 <span class="end-sub">敵の行動へ ›</span></button></div><div class="log" id="log" aria-live="polite">3人を自由に切り替えられます。</div></section></main><div class="modal" id="modal"><div class="dialog equip-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogtitle"><h3 id="dialogtitle"></h3><p id="dialogtext" class="equip-details"></p><button id="close">閉じる</button></div></div><section id="status-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>状態異常の動作テスト（仮付与・カード性能変更なし）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><select id="st-target" style="max-width:120px;background:#252234;color:white"><option value="foe">選択中の敵</option><option value="m">美桜</option><option value="r">麗華</option><option value="k">小春</option></select><select id="st-type" style="background:#252234;color:white"><option value="poison">毒</option><option value="curse">呪詛</option><option value="burn">火傷</option><option value="frost">凍傷</option><option value="stun">スタン</option><option value="shock">感電</option></select><button id="st-apply" type="button">付与（2回の敵フェーズ）</button><button id="st-clear" type="button">外す</button></div><div style="margin-top:5px;color:#bdb3ca">感電テスト：武器技と各キャラ先頭カードを封じる。火傷+25%／凍傷−10は仮数値。</div><div id="st-details" style="margin-top:5px;line-height:1.5"></div></section><section id="mio-weapon-test" style="margin:8px 10px;padding:9px;border:1px solid #786b8c;border-radius:9px;background:#171523;color:#eee;font:12px sans-serif"><strong>美桜の武器（試作・品質5）</strong><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:7px"><button type="button" data-mio-weapon="common">コモン</button><button type="button" data-mio-weapon="epic">エピック</button><button type="button" data-mio-weapon="mythic">ミシック</button></div><div style="margin-top:5px;color:#bdb3ca">戦闘中でも持ち替えられる（試作だけの決まり）。持ち替えるとチャージと食い込みは0に戻る。</div><div id="mio-weapon-current" style="margin-top:5px;line-height:1.5;white-space:pre-wrap"></div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px"><button type="button" id="test-hard-boss" class="test-toggle" aria-pressed="false">ボスを硬くする：オフ</button><button type="button" id="test-no-damage" class="test-toggle" aria-pressed="false">攻撃を受けない：オフ</button></div><div style="margin-top:5px;color:#bdb3ca">ボスを硬くする：共有HPと部位の壊れる量を10倍にして、最初の状態に戻す（オフで今のボスに戻す）。攻撃を受けない：敵は予告どおり攻撃するが、味方はダメージも状態異常も受けない。</div></section>
 <script>
 'use strict';
 const PORTRAITS={"m": "assets/asset-06.png", "r": "assets/asset-07.png", "k": "assets/asset-08.png"};
@@ -757,6 +757,7 @@ function applyCurseOnCard(unit,cost){
  const curse=statusPower(unit,'curse');
  if(!curse||!cost)return 0;
  const loss=(CURSE_DAMAGE[cost]||0)*curse;
+ if((typeof testNoDamage!=='undefined'&&testNoDamage))return 0;
  const actual=Math.min(unit.hp,loss);unit.hp-=actual;return actual;
 }
 function modifiedDamage(base,attacker,target){
@@ -816,6 +817,8 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
   const c=chars[id],blocked=Math.min(c.guard,n),actual=Math.min(c.hp,n-blocked);
   return {id,n,c,blocked,actual,el:document.querySelector(`.ally[data-id="${id}"]`)};
  });
+ // Test switch 「攻撃を受けない」: the attack is resolved as forecast, but allies lose nothing.
+ if((typeof testNoDamage!=='undefined'&&testNoDamage))hits.forEach(h=>{h.blocked=0;h.actual=0;});
  say('敵の攻撃！');
  // Telegraph briefly holds, then both targets react to the same enemy strike.
  await new Promise(resolve=>setTimeout(resolve,160));
@@ -823,7 +826,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
   if(!h.el)return;
   h.el.classList.remove('hit-react');void h.el.offsetWidth;h.el.classList.add('hit-react');
   const num=document.createElement('span');num.className='hit-number'+(h.actual===0?' blocked':'');
-  num.textContent=h.actual>0?`−${h.actual}`:'防御';h.el.appendChild(num);
+  num.textContent=h.actual>0?`−${h.actual}`:(typeof testNoDamage!=='undefined'&&testNoDamage)?'無効':'防御';h.el.appendChild(num);
   setTimeout(()=>num.remove(),750);
  });
  // Apply HP loss after the initial impact, so the HP bar follows the hit.
@@ -847,7 +850,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  syncBoss();
  if(boss.hp===0)ended=true;
  // Existing effects expire before the next player phase; new enemy effects are applied afterwards.
- turn++;Object.values(chars).forEach(c=>{if(c.poison>0)c.hp=Math.max(0,c.hp-c.poison);tickStatuses(c);c.cost=c.hp>0?3:0;c.guard=0});chooseNextTargets();
+ turn++;Object.values(chars).forEach(c=>{if(c.poison>0&&!(typeof testNoDamage!=='undefined'&&testNoDamage))c.hp=Math.max(0,c.hp-c.poison);tickStatuses(c);c.cost=c.hp>0?3:0;c.guard=0});chooseNextTargets();
  const inflicted=[];
   due.forEach(({f,i})=>{
     const ids=dueTargets.get(i)||[];
@@ -1001,6 +1004,33 @@ document.querySelectorAll('[data-mio-weapon]').forEach(b=>b.onclick=()=>{
  equipMioWeapon(b.dataset.mioWeapon);render();say(`テスト：美桜の武器を「${mioWeapon().name}」（${mioWeapon().rarity}）に持ち替えた。チャージは0に戻った`);
 });
 equipMioWeapon('common');
+// ===== テスト用の切り替え（試作）=====
+// 「ボスを硬くする」: shared HP and every part's break limit x10 (the simulator's base condition), reset to full.
+// 「攻撃を受けない」: enemies attack as forecast, allies take no damage and no ailments (the simulator's "target").
+var testHardBoss=false,testNoDamage=false;
+const TEST_BASE_BOSS_HP=boss.max,TEST_BASE_BREAK=foes.map(f=>f.breakLimit);
+function testSetBoss(scale){
+ boss.max=TEST_BASE_BOSS_HP*scale;boss.hp=boss.max;
+ foes.forEach((f,i)=>{f.breakLimit=TEST_BASE_BREAK[i]*scale;f.breakDamage=0;f.broken=false;f.stunned=false;});
+ syncBoss();
+ if(ended&&boss.hp>0&&Object.values(chars).some(c=>c.hp>0)){ended=false;$('modal').classList.remove('show');}
+}
+function testToggleLabel(){
+ const hb=$('test-hard-boss'),nd=$('test-no-damage');
+ hb.textContent=`ボスを硬くする：${testHardBoss?'オン':'オフ'}`;hb.setAttribute('aria-pressed',String(testHardBoss));
+ nd.textContent=`攻撃を受けない：${testNoDamage?'オン':'オフ'}`;nd.setAttribute('aria-pressed',String(testNoDamage));
+}
+$('test-hard-boss').onclick=()=>{
+ if(resolving||turnClosing){say('敵の行動中は切り替えられない');return;}
+ testHardBoss=!testHardBoss;testSetBoss(testHardBoss?10:1);testToggleLabel();render();
+ say(testHardBoss?`テスト：ボスを硬くした（共有HP ${boss.max}、壊れる量 ${foes.map(f=>f.breakLimit).join('・')}）`:`テスト：今のボスに戻した（共有HP ${boss.max}）`);
+};
+$('test-no-damage').onclick=()=>{
+ if(resolving||turnClosing){say('敵の行動中は切り替えられない');return;}
+ testNoDamage=!testNoDamage;testToggleLabel();render();
+ say(testNoDamage?'テスト：攻撃を受けない（敵は予告どおり攻撃する）':'テスト：攻撃を普段どおり受ける');
+};
+testToggleLabel();
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
 /* Hold summary only: keep the existing arena, arrows and forecast layout. */
@@ -1296,6 +1326,7 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 .equipment-strip .mio-meta .weapon-segments i{width:10px!important;height:10px!important}
 .equipment-strip .mio-meta .weapon-status{line-height:12px!important;font-size:9px!important}
 #mio-weapon-test [data-mio-weapon][aria-pressed="true"]{outline:2px solid #e9c98a;outline-offset:1px}
+#mio-weapon-test .test-toggle[aria-pressed="true"]{background:#6b5326;color:#fff3d6;outline:2px solid #e9c98a;outline-offset:1px}
 /* A short glow when a weapon effect fires. */
 @keyframes weapon-proc{0%{box-shadow:0 0 0 1px #e9c98a,0 0 10px #e9c98a99}100%{box-shadow:none}}
 .weapon.weapon-proc{animation:weapon-proc .9s ease-out}
