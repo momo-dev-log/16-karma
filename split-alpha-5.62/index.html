@@ -574,6 +574,7 @@ function chooseNextTargets(){
   // Attack kind rotation (unchanged): single, two-target range, and full-party attacks; targets are random.
   const mode=(turn+i)%4;
   f.attackKind=mode===0?'all':mode===1?'range':'single';
+  if(i===0&&f.attackKind==='all'&&(typeof testHandActive==='function'&&testHandActive()))f.attackKind='single';
   if(f.attackKind==='all')f.targets=[...alive];
   // Chosen when the forecast is made and stored on the part; the enemy phase attacks these same targets.
   else if(f.attackKind==='range')f.targets=pickTargets(alive,2);
@@ -596,7 +597,7 @@ function syncBoss(){enemyHp=boss.hp;foes.forEach(f=>{f.hp=boss.hp;f.max=boss.max
 let attackQueue=Promise.resolve(),pendingAttacks=0,turnClosing=false;const foeFx=new Map(),dyingFoes=new Set();const maxEnemy=420,targets={m:12,k:8},$=id=>document.getElementById(id),say=s=>$('log').textContent=s;
 function render(){ $('turn').textContent=`TURN ${turn} · 戦闘UI検証`;renderFoes();
 $('allies').innerHTML=Object.entries(chars).map(([id,c])=>`<button class="ally ${id===active?'on':''}" data-id="${id}"><img class="ally-face" src="${PORTRAITS[id]}" alt=""><div class="ally-data"><div class="name"><span>${c.name}</span><span class="portrait-cost" aria-label="仮のコスト表示 ${c.cost}/3">${Array.from({length:Math.max(3,c.cost)},(_,i)=>`<i class="${i<c.cost?'filled':''}"></i>`).join('')}</span></div><div class="health"><span>HP ${c.hp}/${c.max}</span><span>盾 ${c.guard}</span></div><div class="hpbar"><i style="width:${c.hp/c.max*100}%"></i></div><small class="ally-status" style="font-size:10px;color:#f0c7a4">${statusIconsHtml(c)}</small></div></button>`).join('');fitAllyStatuses();$('allies').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(ended||resolving||turnClosing)return;active=b.dataset.id;render();say(chars[active].name+'に切り替え')});
-const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta${active==='m'&&typeof mioWeaponLabel==='function'?' mio-meta':''}"><span class="weapon-label">${active==='m'?(typeof mioWeaponLabel==='function'?mioWeaponLabel():'デコミニチェンソー'):active==='r'?'クラシック銃':'毒の武器'}</span>${active==='m'&&typeof mioWeaponShort==='function'?`<span class="weapon-desc">${mioWeaponShort()}</span>`:''}<span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}${active==='m'&&typeof mioBitesText==='function'?mioBitesText():''}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;const n=typeof weaponFireDamage==='function'?weaponFireDamage(id):originalWeapons[id].damage;queueAttack(n,id);const note=typeof weaponAfterFire==='function'?weaponAfterFire(id):'';say(c.name+'の武器技：'+n+'ダメージ'+note);render()};$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
+const c=chars[active];$('handname').textContent='';$('weapon').classList.toggle('ready',c.charge>=originalWeapons[active].charge);$('weapon').innerHTML=`<button type="button" class="equipment-tile weapon-tile" id="weaponinspect" aria-label="武器画像をタップして効果を確認" title="武器の効果を確認"><span class="equip-art weapon-art" aria-hidden="true">${active==='m'?'<svg viewBox="0 0 40 40"><path d="M13 31 28 7 34 10 19 34Z" fill="#9c9b9c" stroke="#e3d9cf" stroke-width="1.5"/><path d="M8 30 17 23 23 30 16 37Z" fill="#745650" stroke="#bd9885"/></svg>':active==='r'?'<svg viewBox="0 0 40 40"><path d="M6 14h26v8H19l-4 12-7-3 5-9H6Z" fill="#77737e" stroke="#c7bdc4" stroke-width="1.5"/><circle cx="20" cy="19" r="5" fill="#433a44" stroke="#b9a5a8"/></svg>':'<svg viewBox="0 0 40 40"><path d="M16 5h8v10l9 15q2 5-4 5H11q-6 0-4-5l9-15Z" fill="#436753" stroke="#a3c7a8" stroke-width="2"/><path d="M11 28q9-8 18 0l3 5H8Z" fill="#548b5b"/></svg>'}</span></button><div class="weapon-meta${active==='m'&&typeof mioWeaponLabel==='function'?' mio-meta':''}"><span class="weapon-label">${active==='m'?(typeof mioWeaponLabel==='function'?mioWeaponLabel():'デコミニチェンソー'):active==='r'?'クラシック銃':'毒の武器'}</span>${active==='m'&&typeof mioWeaponShort==='function'?`<span class="weapon-desc">${mioWeaponShort()}</span>`:''}<span class="weapon-segments" aria-label="武器チャージ ${c.charge}/${originalWeapons[active].charge}">${Array.from({length:originalWeapons[active].charge},(_,i)=>`<i class="${i<c.charge?'filled':''}"></i>`).join('')}</span><span class="weapon-status">チャージ ${c.charge}/${originalWeapons[active].charge}${active==='m'&&typeof mioBitesText==='function'?mioBitesText():''}</span></div><button id="weaponuse" ${c.charge<originalWeapons[active].charge||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock')?'disabled':''}>武器技</button>`;$('weaponinspect').onclick=()=>showWeaponDetails();$('weaponuse').onclick=async()=>{if(resolving||turnClosing||ended||c.charge<originalWeapons[active].charge||c.hp<=0||statusPower(c,'stun')||statusPower(c,'shock'))return;const id=active;c.charge=0;const n=typeof weaponFireDamage==='function'?weaponFireDamage(id):originalWeapons[id].damage;queueAttack(n,id);const note=typeof weaponAfterFire==='function'?weaponAfterFire(id):'';say(c.name+'の武器技：'+n+'ダメージ'+note);render()};if((typeof testHandActive==='function'&&testHandActive()))renderTestHand(c);else{$('cards').innerHTML=c.cards.map((x,i)=>`<button class="card" data-i="${i}" ${c.cost<x[1]||ended||resolving||turnClosing||c.hp<=0||statusPower(c,'stun')||isElectroBlocked(c,cardList.filter(y=>y[1]===active)[i]?.[0])?'disabled':''}><span class="cost">${x[1]}</span><span class="art">${x[3]}</span><span class="name">${x[0]}</span><span class="effect">${x[4]}</span></button>`).join('');$('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>play(+b.dataset.i));}$('end').disabled=ended||resolving||turnClosing;requestAnimationFrame(drawLines)}
 function renderFoes(){
  const host=$('foe');host.classList.add('foe-multi','boss-unified');
  host.innerHTML=`<div class="boss-parts"><img class="boss-art" src="assets/asset-09.png" alt="" aria-hidden="true">${foes.map((f,i)=>`<button type="button" class="foe-unit boss-part ${selectedFoe===i?'chosen':''} ${f.stunned?'part-stunned':''}" data-foe="${i}" aria-label="${f.glyph}を狙う" aria-pressed="${selectedFoe===i}"><span class="boss-point-icon ${f.broken?'is-broken':''} ${selectedFoe===i?'is-selected':''}" aria-hidden="true"><span class="boss-point-star">✦</span>${f.broken?'<span class="boss-point-crack"></span>':''}</span></button>`).join('')}</div><div class="boss-hp"><div class="boss-hp-name">禍呪灰</div><div class="boss-hp-track"><i style="width:${boss.hp/boss.max*100}%"></i></div><div class="boss-hp-caption"><span>HP ${boss.hp} / ${boss.max}</span></div></div>`;
@@ -774,7 +775,7 @@ function applyCurseOnCard(unit,cost){
  const actual=Math.min(unit.hp,loss);unit.hp-=actual;return actual;
 }
 function modifiedDamage(base,attacker,target){
- return Math.max(0,Math.round(Math.max(0,base-statusPower(attacker,'frost'))*(1+statusPower(target,'burn')/100)));
+ return Math.max(0,Math.round(Math.max(0,base-statusPower(attacker,'frost'))*(1+statusPower(target,'burn')/100)*(typeof testEnemyScale==='function'?testEnemyScale(attacker):1)));
 }
 function isElectroBlocked(unit,cardId){
  const shock=statusBag(unit).shock;
@@ -873,13 +874,14 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
       const key=plan?plan.ailment:f.ailments?.[(turn-2)%f.ailments.length];if(!key)return;
       if(key==='poison')h.c.poison=(h.c.poison||0)+2;
       else {
-        addStatus(h.c,key,key==='burn'?25:key==='frost'?10:1,2);
+        addStatus(h.c,key,key==='burn'?25:key==='frost'?10:1,key==='stun'&&(typeof testHandActive==='function'&&testHandActive())?1:2);
         if(key==='shock')statusBag(h.c).shock.blockedCards=[id==='m'?'M1':id==='r'?'R1':'K1'];
       }
       inflicted.push(h.c.name+'：'+({burn:'火傷',stun:'スタン',curse:'呪詛',shock:'感電',frost:'凍傷',poison:'毒'}[key]));
     });
 
  });
+ if(typeof testHandNewTurn==='function')testHandNewTurn();
  resolving=false;turnClosing=false;
  const defeated=Object.values(chars).every(c=>c.hp===0);
  if(defeated)ended=true;
@@ -1044,6 +1046,121 @@ $('test-no-damage').onclick=()=>{
  say(testNoDamage?'テスト：攻撃を受けない（敵は予告どおり攻撃する）':'テスト：攻撃を普段どおり受ける');
 };
 testToggleLabel();
+// ===== 手札テスト（?test=hand のときだけ。付けないときは何もしない）=====
+// Forms: A = 4 fixed cards, once per turn / B = 6 cards, a used card rests the next turn / C = 8-card deck, draw 4 each turn.
+// Test-only game changes: stun lasts 1 turn, 禍's all-target attack becomes single-target, enemy damage x1.5 (rounded),
+// boss HP and break limits x10, card effects follow their descriptions (cards 5-8 added), shock blocks the leftmost card.
+const TEST_HAND=new URLSearchParams(location.search).get('test')==='hand';
+const HAND_FORMS={A:'4枚固定・1ターン1回',B:'持ち込み6枚・使った札は休む',C:'山札から4枚'};
+const HAND_ART={m:'斬',r:'銃',k:'毒'};
+var testHandForm=null,testHandState=null;
+function testHandActive(){return TEST_HAND;}
+function testEnemyScale(attacker){return TEST_HAND&&foes.includes(attacker)?1.5:1;}
+function handShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function handIds(id,n){return Array.from({length:n},(_,i)=>id.toUpperCase()+(i+1));}
+function handDraw(st){
+ while(st.hand.length<4){
+  if(!st.deck.length){if(!st.discard.length)break;st.deck=handShuffle(st.discard);st.discard=[];}
+  st.hand.push(st.deck.pop());
+ }
+}
+function testHandInit(){
+ const f=new URLSearchParams(location.search).get('form');testHandForm=HAND_FORMS[f]?f:'A';
+ testHandState={};
+ for(const id of ids){
+  const st={hand:[],used:new Set(),rest:new Set(),deck:[],discard:[],played:0};
+  if(testHandForm==='A')st.hand=handIds(id,4);
+  else if(testHandForm==='B')st.hand=handIds(id,6);
+  else{st.deck=handShuffle(handIds(id,8));handDraw(st);}
+  testHandState[id]=st;
+ }
+}
+// Called once per new turn (after the enemy phase).
+function testHandNewTurn(){
+ if(!TEST_HAND)return;
+ for(const id of ids){const st=testHandState[id];
+  st.rest=testHandForm==='B'?new Set(st.used):new Set();st.used=new Set();st.played=0;
+  if(testHandForm==='C'){st.discard.push(...st.hand);st.hand=[];handDraw(st);}
+ }
+}
+// Parts that attack this turn with a face forecast, and the allies they target.
+function handDueParts(){return foes.map((f,i)=>i).filter(i=>{const f=foes[i];return f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun');});}
+function handTargeted(id){return handDueParts().some(i=>attackTargets(foes[i],i).includes(id));}
+// Card damage before the weapon bonus and before frost, with the description's conditions.
+function handCardDamage(id,card,foe){
+ const c=chars[id],st=testHandState[id];let d=card.damage;
+ if(card.id==='M2'&&handTargeted('m'))d=60;
+ if(card.id==='M3'&&ids.some(x=>x!=='m'&&chars[x].hp>0&&handTargeted(x)))d=60;
+ if(card.id==='M6'&&st.played>0)d=70;
+ if(card.id==='M7'&&c.hp*2<=c.max)d=130;
+ if(card.id==='K7')d+=8*(foe.poison||0);
+ return d;
+}
+function handWouldBreak(id,card,foe){
+ if(card.id!=='R7'||foe.broken)return false;
+ const n=modifiedDamage(handCardDamage(id,card,foe),chars[id],foe),dealt=foe.broken?Math.round(n*1.2):n;
+ return foe.breakDamage+dealt>=foe.breakLimit;
+}
+// Glow: the card's condition is met now, so it beats its base number (weapon bonus not counted).
+function handBoosted(id,card){const foe=foes[selectedFoe];return handCardDamage(id,card,foe)>card.damage||handWouldBreak(id,card,foe);}
+function handPlayable(id,idx){
+ const c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
+ if(!card||ended||resolving||turnClosing||c.hp<=0||c.cost<card.cost||st.used.has(cardId)||st.rest.has(cardId))return false;
+ if(statusPower(c,'stun'))return false;
+ if(idx===0&&statusBag(c).shock)return false; // shock blocks the leftmost card in the test
+ return true;
+}
+function renderTestHand(c){
+ const id=active,st=testHandState[id],six=st.hand.length>4&&testHandForm==='B';
+ $('cards').classList.toggle('hand6',six);
+ // The long-press explanation reads chars[active].cards; keep it in step with the shown hand.
+ c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],k.desc,k.effect];});
+ $('cards').innerHTML=st.hand.map((cid,i)=>{const k=CARDS[cid],can=handPlayable(id,i),mark=st.rest.has(cid)?'休':st.used.has(cid)?'済':'';
+  const glow=can&&handBoosted(id,k);
+  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${k.desc}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+ $('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>testHandPlay(+b.dataset.i));
+ $('handname').textContent=`形${testHandForm}：${HAND_FORMS[testHandForm]}`+(testHandForm==='C'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
+}
+function testHandPlay(idx){
+ const id=active,c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
+ if(!handPlayable(id,idx)){if(statusBag(c).shock&&idx===0)say(c.name+'：感電でいちばん左の札は使えない');return;}
+ const foe=foes[selectedFoe];if(!foe||foe.hp<=0)return;
+ st.used.add(cardId);
+ c.cost-=card.cost;c.charge=Math.min(originalWeapons[id].charge,c.charge+card.cost);
+ const curseLoss=applyCurseOnCard(c,card.cost);if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
+ let damage=handCardDamage(id,card,foe);const notes=[];
+ const e=card.effect,guard={guard15:15,guard20:20,guard30:30,poisonguard:card.id==='K6'?20:25}[e]||0;
+ if(guard)c.guard+=guard;
+ if(e==='weaken10')foe.weak=(foe.weak||0)+10;
+ const poison={poison1:1,poisonweak:1,poisonguard:card.id==='K6'?2:1,poison2:2,poison3:3,poison4:4}[e]||0;
+ if(poison)foe.poison+=poison;
+ if(e==='poisonweak')foe.weak=(foe.weak||0)+8;
+ if(card.id==='M8'){ // reduce the strongest single-target forecast attack by 40
+  let best=-1,bestDmg=-1;
+  for(const i of handDueParts()){const f=foes[i],t=attackTargets(f,i);if(t.length!==1)continue;
+   const d=modifiedDamage(Math.max(0,(f.plan?f.plan.damage:f.damage)-(f.weak||0)),f,chars[t[0]]);if(d>bestDmg){best=i;bestDmg=d;}}
+  if(best>=0){foes[best].weak=(foes[best].weak||0)+40;notes.push(`${foes[best].glyph}の攻撃 −40`);}
+ }
+ const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=bonus;
+ damage=modifiedDamage(damage,c,foe);
+ const wasBroken=foe.broken;
+ queueAttack(damage,id);
+ if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=30;notes.push('部位を壊して盾+30');}
+ const wnote=typeof mioAfterCardHit==='function'?mioAfterCardHit(id,bonus):'';
+ st.played++;
+ say(c.name+'：'+card.name+' → '+damage+'ダメージ'+(notes.length?'（'+notes.join('・')+'）':'')+wnote);render();
+}
+if(TEST_HAND){
+ testHandInit();
+ testHardBoss=true;testSetBoss(10);testToggleLabel();
+ // Form buttons and restart in the header (the header keeps its height).
+ const bar=document.createElement('span');bar.className='hand-bar';
+ bar.innerHTML=Object.keys(HAND_FORMS).map(f=>`<button type="button" data-hand-form="${f}" aria-pressed="${f===testHandForm}" title="${HAND_FORMS[f]}">${f}</button>`).join('')+'<button type="button" data-hand-restart>やり直す</button>';
+ document.querySelector('.header').insertBefore(bar,document.getElementById('turn'));
+ const go=f=>{const u=new URL(location.href);u.searchParams.set('test','hand');u.searchParams.set('form',f);location.replace(u.toString());};
+ bar.querySelectorAll('[data-hand-form]').forEach(b=>b.onclick=()=>go(b.dataset.handForm));
+ bar.querySelector('[data-hand-restart]').onclick=()=>go(testHandForm);
+}
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
 /* Hold summary only: keep the existing arena, arrows and forecast layout. */
@@ -1347,6 +1464,18 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 @keyframes weapon-proc{0%{box-shadow:0 0 0 1px #e9c98a,0 0 10px #e9c98a99}100%{box-shadow:none}}
 .weapon.weapon-proc{animation:weapon-proc .9s ease-out}
 @media (prefers-reduced-motion:reduce){.weapon.weapon-proc{animation:none;outline:1px solid #e9c98a}}
+</style><style>
+/* 手札テスト（?test=hand のときだけ使うクラス） */
+.hand-bar{display:flex;gap:3px;align-items:center;margin-left:auto;margin-right:6px}
+.hand-bar button{appearance:none;height:22px;min-width:24px;padding:0 5px;border:1px solid #786b8c;border-radius:5px;background:#252234;color:#e8dfe8;font-size:11px;line-height:20px}
+.hand-bar button[aria-pressed="true"]{background:#6b5326;color:#fff3d6;border-color:#e9c98a}
+.cards.hand6{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+.cards.hand6 .card{height:auto!important;min-height:0!important;padding:2px 4px;justify-content:center}
+.cards.hand6 .card .art{height:auto;font-size:17px;border-bottom:0;background:none;text-shadow:none;line-height:1.1}
+.cards.hand6 .card .name{font-size:10px;margin-top:1px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cards.hand6 .card .cost{width:17px;height:17px;font-size:10px;top:2px;left:2px}
+.card.hand-glow{box-shadow:0 0 0 2px var(--hand-glow),0 0 10px var(--hand-glow)}
+.card .hand-mark{position:absolute;top:3px;right:4px;padding:0 4px;border-radius:4px;background:#14131bdd;border:1px solid #b9a5a8;color:#f0e2d8;font-size:11px;font-weight:800;line-height:16px;z-index:1}
 </style><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
  <button id="preview-toggle" type="button" style="background:#4d3659;color:white;border:1px solid #b989eb;border-radius:8px;padding:8px;">予告テスト</button>
  <div id="preview-options" hidden style="background:#211a2b;border:1px solid #b989eb;border-radius:9px;padding:8px;margin-top:5px;display:none;gap:5px;flex-wrap:wrap;max-width:290px;">
