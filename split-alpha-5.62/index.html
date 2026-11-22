@@ -620,10 +620,7 @@ function drawLines(){
   const x=rect.width*(i+.5)/3;
   const {targets,kind}=forecastView(f,i);
   if(f.wait!==1&&typeof testHandRestPart==='function'&&testHandRestPart(i)){
-   // Test: 禍 / 灰 attack every other turn; the off turn is a dim "休み" panel (no number, no chevrons).
-   const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
-   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#17151cd9',stroke:'#5f5662','stroke-width':1.2}));
-   svg.append(make('text',{x,y:labelY,'text-anchor':'middle','dominant-baseline':'central','font-size':13,'font-weight':700,fill:'#8f8791'},'休み'));
+   // Test: 禍 / 灰 attack every other turn; nothing is drawn on the off turn.
    return;
   }
   if(f.wait!==1){
@@ -862,7 +859,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  // Poison resolves once at the end of the enemy phase, independently per surviving enemy.
  const poisonEvents=[];
  foes.forEach((f,i)=>{
-  if(boss.hp>0&&f.poison>0){const loss=Math.min(boss.hp,f.poison);boss.hp-=loss;poisonEvents.push(`${f.glyph} 毒−${loss}`);}
+  if(boss.hp>0&&f.poison>0){const loss=Math.min(boss.hp,f.poison);boss.hp-=loss;poisonEvents.push(`${f.glyph} 毒−${loss}`);if(typeof showPoisonTick==='function')showPoisonTick(i,loss);}
   f.weak=0;
   const wasStunned=!!f.stunned||!!statusPower(f,'stun');
   tickStatuses(f);
@@ -1535,7 +1532,38 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 .cards.hand6 .card .cost{width:17px;height:17px;font-size:10px;top:2px;left:2px}
 .card.hand-glow{box-shadow:0 0 0 2px var(--hand-glow),0 0 10px var(--hand-glow)}
 .card .hand-mark{position:absolute;top:3px;right:4px;padding:0 4px;border-radius:4px;background:#14131bdd;border:1px solid #b9a5a8;color:#f0e2d8;font-size:11px;font-weight:800;line-height:16px;z-index:1}
-</style><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
+</style><style>
+/* Poison stacks on each boss part (display only). Overlay above the boss art; never takes taps. */
+.poison-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
+.poison-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap;transform:translateX(-50%)}
+.poison-tick{position:absolute;transform:translateX(-50%);color:#a6e597;font-size:13px;font-weight:900;text-shadow:0 1px 3px #000;white-space:nowrap;animation:poison-tick 1.1s ease-out forwards}
+@keyframes poison-tick{0%{opacity:0;margin-top:4px}15%{opacity:1}100%{opacity:0;margin-top:-14px}}
+@media (prefers-reduced-motion:reduce){.poison-tick{animation:poison-tick-still 1.1s linear forwards}@keyframes poison-tick-still{0%,80%{opacity:1}100%{opacity:0}}}
+</style>
+<script>
+(()=>{
+ const arena=document.getElementById('arena'),foeEl=document.getElementById('foe');
+ const layer=document.createElement('div');layer.className='poison-layer';layer.setAttribute('aria-hidden','true');arena.append(layer);
+ // One row near the top of the boss art, inside each part's column, clear of the part markers, 😈 and the HP block.
+ const ANCHOR=[0.65,0.3,0.65],TOP=11;
+ function spot(i){
+  const part=foeEl.querySelectorAll('.boss-part')[i],base=arena.getBoundingClientRect(),f=foeEl.getBoundingClientRect();
+  if(!part)return null;const r=part.getBoundingClientRect();
+  return {x:r.left-base.left+r.width*ANCHOR[i],y:f.top-base.top+TOP};
+ }
+ function update(){
+  layer.querySelectorAll('.poison-badge').forEach(e=>e.remove());
+  foes.forEach((f,i)=>{if(!(f.poison>0))return;const s=spot(i);if(!s)return;
+   const b=document.createElement('span');b.className='poison-badge';b.textContent='☠'+f.poison;b.style.left=s.x+'px';b.style.top=s.y+'px';layer.append(b);});
+ }
+ // Poison damage at the end of the enemy phase: a short "−N" at that part.
+ window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
+  t.style.left=s.x+'px';t.style.top=(s.y+20)+'px';layer.append(t);setTimeout(()=>t.remove(),1200);};
+ new MutationObserver(update).observe(foeEl,{childList:true});
+ window.addEventListener('resize',update);
+ update();
+})();
+</script><aside id="preview-tools" style="position:fixed;right:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);font:13px system-ui;">
  <button id="preview-toggle" type="button" style="background:#4d3659;color:white;border:1px solid #b989eb;border-radius:8px;padding:8px;">予告テスト</button>
  <div id="preview-options" hidden style="background:#211a2b;border:1px solid #b989eb;border-radius:9px;padding:8px;margin-top:5px;display:none;gap:5px;flex-wrap:wrap;max-width:290px;">
  <button data-preview="m">美桜集中</button><button data-preview="r">麗華集中</button><button data-preview="aoe">全体</button><button data-preview="off">元に戻す</button>
