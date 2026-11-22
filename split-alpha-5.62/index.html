@@ -581,7 +581,7 @@ function chooseNextTargets(){
   else f.targets=pickTargets(alive,1);
   // The forecast is a promise: the enemy side of this turn's attack (targets, base damage, ailment) is fixed here
   // and the attack uses exactly this. Ally-side reductions (guard, card weakening, burn on the target) apply when it lands.
-  f.plan={targets:f.targets,damage:f.damage,ailment:f.ailments?.[(turn-1)%f.ailments.length]||null};
+  f.plan={targets:f.targets,damage:f.damage,ailment:(typeof testHandPlanAilment==='function'&&typeof testHandActive==='function'&&testHandActive())?testHandPlanAilment(f):(f.ailments?.[(turn-1)%f.ailments.length]||null)};
  });
 }
 // Forecast test (#preview=m|r|aoe): display-only override of the forecast panels; attacks still use attackTargets.
@@ -833,6 +833,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
  });
  // Test switch 「攻撃を受けない」: the attack is resolved as forecast, but allies lose nothing.
  if((typeof testNoDamage!=='undefined'&&testNoDamage))hits.forEach(h=>{h.blocked=0;h.actual=0;});
+ if(typeof testHandCountAttacks==='function')testHandCountAttacks(due);
  say('敵の攻撃！');
  // Telegraph briefly holds, then both targets react to the same enemy strike.
  await new Promise(resolve=>setTimeout(resolve,160));
@@ -1048,7 +1049,7 @@ $('test-no-damage').onclick=()=>{
 testToggleLabel();
 // ===== 手札テスト（?test=hand のときだけ。付けないときは何もしない）=====
 // Forms: A = 4 fixed cards, once per turn / B = 6 cards, a used card rests the next turn / C = 8-card deck, draw 4 each turn.
-// Test-only game changes: stun lasts 1 turn, 禍's all-target attack becomes single-target, enemy damage x1.5 (rounded),
+// Test-only game changes: stun lasts 1 turn, 禍's all-target attack becomes single-target, enemy damage x1.7 (rounded),
 // boss HP and break limits x10, card effects follow their descriptions (cards 5-8 added), shock blocks the leftmost card.
 const TEST_HAND=new URLSearchParams(location.search).get('test')==='hand';
 const HAND_FORMS={A:'4枚固定・1ターン1回',B:'持ち込み6枚・使った札は休む',C:'山札から4枚',D:'山札から引く・使わなかった札は残す'};
@@ -1057,7 +1058,18 @@ const HAND_LABELS={...HAND_FORMS,D:'山札から引く・残す'};
 const HAND_ART={m:'斬',r:'銃',k:'毒'};
 var testHandForm=null,testHandState=null;
 function testHandActive(){return TEST_HAND;}
-function testEnemyScale(attacker){return TEST_HAND&&foes.includes(attacker)?1.5:1;}
+function testEnemyScale(attacker){return TEST_HAND&&foes.includes(attacker)?1.7:1;}
+// Ailments in the test: each part counts its own attacks (only turns it really attacks). Only its 1st, 3rd, 5th... attack
+// carries an ailment, and the kind cycles by how many ailment attacks that part has made (禍: burn, stun, burn...).
+// Decided when the forecast is made and kept in the plan.
+function testHandPlanAilment(f){
+ const next=(f.testAttacks||0)+1;if(next%2===0)return null;
+ return f.ailments?.[(f.testAilmentAttacks||0)%f.ailments.length]||null;
+}
+function testHandCountAttacks(due){
+ if(!TEST_HAND)return;
+ for(const {f,plan} of due){f.testAttacks=(f.testAttacks||0)+1;if(plan&&plan.ailment)f.testAilmentAttacks=(f.testAilmentAttacks||0)+1;}
+}
 function handShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function handIds(id,n){return Array.from({length:n},(_,i)=>id.toUpperCase()+(i+1));}
 function handDraw(st){
