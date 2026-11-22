@@ -208,7 +208,8 @@ class Battle{
   }
 
   // ---- weapon: render() #weaponuse handler ----
-  weaponReady(c){return !this.ended&&c.hp>0&&c.charge>=c.weapon.ch&&!this.sp(c,'stun')&&!this.sp(c,'shock');}
+  // Shock blocks cards only; the weapon technique can still be used (stun still blocks it).
+  weaponReady(c){return !this.ended&&c.hp>0&&c.charge>=c.weapon.ch&&!this.sp(c,'stun');}
   fireWeapon(c){
     c.charge=0;this.stats.weaponUses[c.id]++;
     this.curFire={turn:this.turn,guard:c.guard,bites:c.ws.bites};this.st.fires[c.id].push(this.curFire);
