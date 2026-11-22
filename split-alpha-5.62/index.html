@@ -581,7 +581,7 @@ function chooseNextTargets(){
   else f.targets=pickTargets(alive,1);
   // The forecast is a promise: the enemy side of this turn's attack (targets, base damage, ailment) is fixed here
   // and the attack uses exactly this. Ally-side reductions (guard, card weakening, burn on the target) apply when it lands.
-  f.plan={targets:f.targets,damage:f.damage,ailment:(typeof testHandPlanAilment==='function'&&typeof testHandActive==='function'&&testHandActive())?testHandPlanAilment(f):(f.ailments?.[(turn-1)%f.ailments.length]||null)};
+  f.plan={targets:f.targets,damage:(typeof testEnemyBase==='function'?testEnemyBase(f):f.damage),ailment:(typeof testHandPlanAilment==='function'&&typeof testHandActive==='function'&&testHandActive())?testHandPlanAilment(f):(f.ailments?.[(turn-1)%f.ailments.length]||null)};
  });
 }
 // Forecast test (#preview=m|r|aoe): display-only override of the forecast panels; attacks still use attackTargets.
@@ -619,6 +619,13 @@ function drawLines(){
   if(boss.hp<=0||f.stunned||statusPower(f,'stun'))return;
   const x=rect.width*(i+.5)/3;
   const {targets,kind}=forecastView(f,i);
+  if(f.wait!==1&&typeof testHandRestPart==='function'&&testHandRestPart(i)){
+   // Test: 禍 / 灰 attack every other turn; the off turn is a dim "休み" panel (no number, no chevrons).
+   const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
+   svg.append(make('rect',{x:x-width/2,y:labelY-21,width,height:42,rx:6,fill:'#17151cd9',stroke:'#5f5662','stroke-width':1.2}));
+   svg.append(make('text',{x,y:labelY,'text-anchor':'middle','dominant-baseline':'central','font-size':13,'font-weight':700,fill:'#8f8791'},'休み'));
+   return;
+  }
   if(f.wait!==1){
    // Charge-up panel: same box as a forecast panel; no chevrons, portraits, ailment or data-forecast-* values.
    const labelY=bottom-34,width=Math.min(rect.width/3-6,112);
@@ -635,7 +642,7 @@ function drawLines(){
    // One row centered in the panel: an empty portrait frame with "?" (target unknown), then base damage.
    const row=make('g');svg.append(row);
    const iconSize=20,iconTop=labelY-iconSize/2;
-   const base=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String(f.damage));
+   const base=make('text',{y:labelY,'dominant-baseline':'central','font-size':15,'font-weight':800,fill:'#ffe3da'},String((typeof testEnemyBase==='function'?testEnemyBase(f):f.damage)));
    row.append(base);
    const baseWidth=base.getComputedTextLength(),rowLeft=x-(iconSize+5+baseWidth)/2;
    row.append(make('rect',{x:rowLeft,y:iconTop,width:iconSize,height:iconSize,rx:3,fill:'none',stroke:'#f04f4d','stroke-width':1.2}));
@@ -871,6 +878,7 @@ function dialog(t,d){$('dialogtitle').textContent=t;$('dialogtext').textContent=
     const ids=dueTargets.get(i)||[];
     ids.forEach(id=>{
       const h=hits.find(h=>h.id===id);
+      if(typeof testHandShieldNote==='function'){const note=testHandShieldNote(h,plan);if(note&&!inflicted.includes(note))inflicted.push(note);}
       if(!h||h.actual<=0||h.c.hp<=0)return;
       const key=plan?plan.ailment:f.ailments?.[(turn-2)%f.ailments.length];if(!key)return;
       if(key==='laceration'&&typeof testHandApplyLaceration==='function')testHandApplyLaceration(h.c);
@@ -939,10 +947,10 @@ function fitAllyStatuses(){
  });
 }
 function statusEntries(u){
- const entries=Object.entries(statusBag(u)).map(([k,v])=>`${statusNames[k]||k}${k==='laceration'?'（毎ターンHP−3・出血+3、盾で防げない）':k==='shock'?'（先頭カード不可）':k==='stun'?'（行動不可）':k==='burn'?'（被ダメ+'+v.power+'%）':k==='frost'?'（与ダメ-'+v.power+'）':k==='curse'?'（Cost消費でHP減少）':' '+v.power} / 残${v.turns}T`);
+ const entries=Object.entries(statusBag(u)).map(([k,v])=>`${statusNames[k]||k}${k==='laceration'?((typeof TEST_HAND!=='undefined'&&TEST_HAND)?'（毎ターンHP−9・出血+3、盾で防げない）':'（毎ターンHP−3・出血+3、盾で防げない）'):k==='shock'?'（先頭カード不可）':k==='stun'?'（行動不可）':k==='burn'?'（被ダメ+'+v.power+'%）':k==='frost'?'（与ダメ-'+v.power+'）':k==='curse'?'（Cost消費でHP減少）':' '+v.power} / 残${v.turns}T`);
  if(u.poison>0)entries.unshift(`毒 ${u.poison}（毎ターン）`);
  if(u.weak>0)entries.push(`攻撃軽減 ${u.weak}（今ターン）`);
- if(u.bleed>0)entries.push(`出血 ${u.bleed}（10以上で25ダメージ、盾で防げない）`);
+ if(u.bleed>0)entries.push(`出血 ${u.bleed}（10以上で${(typeof TEST_HAND!=='undefined'&&TEST_HAND)?75:25}ダメージ、盾で防げない）`);
  return entries;
 }
 function statusText(u){return statusEntries(u).join('・')||'なし';}
@@ -1061,7 +1069,19 @@ const HAND_LABELS={...HAND_FORMS,D:'山札から引く・残す'};
 const HAND_ART={m:'斬',r:'銃',k:'毒'};
 var testHandForm=null,testHandState=null;
 function testHandActive(){return TEST_HAND;}
-function testEnemyScale(attacker){return TEST_HAND&&foes.includes(attacker)?1.7:1;}
+function testEnemyScale(attacker){return 1;}
+// Test numbers: allies x3 (HP, guard, reductions, laceration, curse), enemy attacks x6, boss HP and break limits x8.
+// The x6 is put into the plan's base damage, so reductions (weak) come off the scaled number (72 - 30 = 42).
+const TEST_ENEMY_SCALE=6,TEST_ALLY_SCALE=3,TEST_BOSS_SCALE=8,TEST_ALLY_HP={m:330,r:285,k:270},TEST_CURSE={0:0,1:6,2:15,3:27};
+function testEnemyBase(f){return TEST_HAND?Math.round(f.damage*TEST_ENEMY_SCALE):f.damage;}
+function testHandRestPart(i){return TEST_HAND&&(i===0||i===2);}
+// Card text with guard and reduction numbers x3 (the test's own numbers).
+function testHandDesc(desc){return desc.replace(/盾(\d+)/g,(m,n)=>'盾'+n*TEST_ALLY_SCALE).replace(/(\d+)軽減/g,(m,n)=>n*TEST_ALLY_SCALE+'軽減');}
+// A hit that carried an ailment but was fully blocked by guard: no HP lost, so no ailment.
+function testHandShieldNote(h,plan){
+ if(!TEST_HAND||!h||!plan||!plan.ailment||h.actual>0||h.blocked<=0||h.c.hp<=0)return null;
+ return `${h.c.name}：盾で防いだ・状態異常なし`;
+}
 // Ailments in the test: each part counts its own attacks (only turns it really attacks). Only its 1st, 3rd, 5th... attack
 // carries an ailment, and the kind cycles by how many ailment attacks that part has made (禍: burn, stun, burn...).
 // Decided when the forecast is made and kept in the plan.
@@ -1078,8 +1098,8 @@ var testHandEvents=[];
 function testHandApplyLaceration(c){statusBag(c).laceration={power:1,turns:2};}
 function testHandBleedTick(c){
  if(!TEST_HAND||c.hp<=0||!statusBag(c).laceration||(typeof testNoDamage!=='undefined'&&testNoDamage))return;
- c.hp=Math.max(0,c.hp-3);c.bleed=(c.bleed||0)+3;testHandEvents.push(`${c.name} 裂傷 −3（出血${c.bleed}）`);
- if(c.bleed>=10){c.hp=Math.max(0,c.hp-25);c.bleed=0;testHandEvents.push(`${c.name} 出血 −25`);}
+ c.hp=Math.max(0,c.hp-9);c.bleed=(c.bleed||0)+3;testHandEvents.push(`${c.name} 裂傷 −9（出血${c.bleed}）`);
+ if(c.bleed>=10){c.hp=Math.max(0,c.hp-75);c.bleed=0;testHandEvents.push(`${c.name} 出血 −75`);}
 }
 function testHandCountAttacks(due){
  if(!TEST_HAND)return;
@@ -1102,11 +1122,16 @@ function testHandInit(){
   else if(testHandForm==='B')st.hand=handIds(id,6);
   else{st.deck=handShuffle(handIds(id,8));handDraw(st);}
   testHandState[id]=st;
+  chars[id].hp=chars[id].max=TEST_ALLY_HP[id];
  }
+ // 禍 attacks on odd turns, 灰 on even turns (every other turn); 呪 unchanged.
+ foes[0].interval=2;foes[0].wait=1;foes[2].interval=2;foes[2].wait=2;
 }
 // Called once per new turn (after the enemy phase).
 function testHandNewTurn(){
  if(!TEST_HAND)return;
+ // Keep 禍 on odd and 灰 on even turns even after a break reset their wait.
+ foes[0].wait=turn%2===1?1:2;foes[2].wait=turn%2===0?1:2;
  const events=testHandEvents;testHandEvents=[];
  for(const id of ids){const st=testHandState[id];
   const usedLast=st.used;
@@ -1147,10 +1172,10 @@ function renderTestHand(c){
  const id=active,st=testHandState[id],six=st.hand.length>4&&testHandForm==='B';
  $('cards').classList.toggle('hand6',six);
  // The long-press explanation reads chars[active].cards; keep it in step with the shown hand.
- c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],k.desc,k.effect];});
+ c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],testHandDesc(k.desc),k.effect];});
  $('cards').innerHTML=st.hand.map((cid,i)=>{const k=CARDS[cid],can=handPlayable(id,i),mark=st.rest.has(cid)?'休':st.used.has(cid)?'済':'';
   const glow=can&&handBoosted(id,k);
-  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${k.desc}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${testHandDesc(k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
  $('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>testHandPlay(+b.dataset.i));
  $('handname').textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
 }
@@ -1160,32 +1185,33 @@ function testHandPlay(idx){
  const foe=foes[selectedFoe];if(!foe||foe.hp<=0)return;
  st.used.add(cardId);
  c.cost-=card.cost;c.charge=Math.min(originalWeapons[id].charge,c.charge+card.cost);
- const curseLoss=applyCurseOnCard(c,card.cost);if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
+ const curse=statusPower(c,'curse'),curseLoss=curse&&card.cost&&!(typeof testNoDamage!=='undefined'&&testNoDamage)?Math.min(c.hp,(TEST_CURSE[card.cost]||0)*curse):0;c.hp-=curseLoss;
+ if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
  let damage=handCardDamage(id,card,foe);const notes=[];
- const e=card.effect,guard={guard15:15,guard20:20,guard30:30,poisonguard:card.id==='K6'?20:25}[e]||0;
+ const e=card.effect,guard=({guard15:15,guard20:20,guard30:30,poisonguard:card.id==='K6'?20:25}[e]||0)*TEST_ALLY_SCALE;
  if(guard)c.guard+=guard;
- if(e==='weaken10')foe.weak=(foe.weak||0)+10;
+ if(e==='weaken10')foe.weak=(foe.weak||0)+10*TEST_ALLY_SCALE;
  const poison={poison1:1,poisonweak:1,poisonguard:card.id==='K6'?2:1,poison2:2,poison3:3,poison4:4}[e]||0;
  if(poison)foe.poison+=poison;
- if(e==='poisonweak')foe.weak=(foe.weak||0)+8;
+ if(e==='poisonweak')foe.weak=(foe.weak||0)+8*TEST_ALLY_SCALE;
  if(card.id==='M8'){ // reduce the strongest single-target forecast attack by 40
   let best=-1,bestDmg=-1;
   for(const i of handDueParts()){const f=foes[i],t=attackTargets(f,i);if(t.length!==1)continue;
    const d=modifiedDamage(Math.max(0,(f.plan?f.plan.damage:f.damage)-(f.weak||0)),f,chars[t[0]]);if(d>bestDmg){best=i;bestDmg=d;}}
-  if(best>=0){foes[best].weak=(foes[best].weak||0)+40;notes.push(`${foes[best].glyph}の攻撃 −40`);}
+  if(best>=0){foes[best].weak=(foes[best].weak||0)+40*TEST_ALLY_SCALE;notes.push(`${foes[best].glyph}の攻撃 −${40*TEST_ALLY_SCALE}`);}
  }
  const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=bonus;
  damage=modifiedDamage(damage,c,foe);
  const wasBroken=foe.broken;
  queueAttack(damage,id);
- if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=30;notes.push('部位を壊して盾+30');}
+ if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=30*TEST_ALLY_SCALE;notes.push(`部位を壊して盾+${30*TEST_ALLY_SCALE}`);}
  const wnote=typeof mioAfterCardHit==='function'?mioAfterCardHit(id,bonus):'';
  st.played++;
  say(c.name+'：'+card.name+' → '+damage+'ダメージ'+(notes.length?'（'+notes.join('・')+'）':'')+wnote);render();
 }
 if(TEST_HAND){
  testHandInit();
- testHardBoss=true;testSetBoss(10);testToggleLabel();
+ testHardBoss=true;testSetBoss(TEST_BOSS_SCALE);testToggleLabel();
  // Form buttons and restart in the header (the header keeps its height).
  const bar=document.createElement('span');bar.className='hand-bar';
  bar.innerHTML=Object.keys(HAND_FORMS).map(f=>`<button type="button" data-hand-form="${f}" aria-pressed="${f===testHandForm}" title="${HAND_FORMS[f]}">${f}</button>`).join('')+'<button type="button" data-hand-restart>やり直す</button>';
