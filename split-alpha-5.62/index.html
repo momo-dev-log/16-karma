@@ -1073,6 +1073,18 @@ const TEST_ENEMY_SCALE=6,TEST_ALLY_SCALE=3,TEST_BOSS_SCALE=8,TEST_ALLY_HP={m:330
 function testEnemyBase(f){return TEST_HAND?Math.round(f.damage*TEST_ENEMY_SCALE):f.damage;}
 function testHandRestPart(i){return TEST_HAND&&(i===0||i===2);}
 // Card text with guard and reduction numbers x3 (the test's own numbers).
+// Card text in the test: these cards have their own final numbers; the others get guard / reduction x3.
+const TEST_HAND_DESC={
+ M1:'25×2Hit',M2:'20×2Hit。叩く部位が美桜を狙っていれば20×3Hit',M3:'20×2Hit。叩く部位が美桜以外の仲間を狙っていれば20×3Hit',
+ M4:'35×1Hit、自分に盾45',M5:'35×3Hit',M6:'累計Hit0〜1なら15×3、2〜3なら20×3、4以上なら25×3Hit',
+ M7:'30×3Hit。累計Hit3以上なら、さらに40×1Hit',M8:'25・35・45・55の4Hit。叩いた部位の単体攻撃を120軽減',
+ M9:'12×4Hit',M10:'10×2Hit、自分のHPを24払う（HP1は残る）',M11:'15×3Hit。HPが最大の半分以下なら15×5Hit',
+ M12:'30×3Hit。累計Hit4以上なら30×5Hit',M13:'18×2Hit、味方全員に盾45。累計Hit4以上なら盾90',M14:'18×5Hit。自分の盾が0なら18×6Hit',
+ M15:'15×2Hit、HP36回復。累計Hit4以上なら72回復',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit',
+ R6:'敵に65。叩いた部位が麗華を狙っていれば、その部位の攻撃を60軽減',R14:'敵に40。HPがいちばん低い味方に盾45',
+ K14:'敵に25、毒2。部位の毒が6以上なら、さらに毒2'
+};
+function handCardDesc(cid,desc){return TEST_HAND_DESC[cid]||testHandDesc(desc);}
 function testHandDesc(desc){return desc.replace(/盾(\d+)/g,(m,n)=>'盾'+n*TEST_ALLY_SCALE).replace(/(\d+)軽減/g,(m,n)=>n*TEST_ALLY_SCALE+'軽減');}
 // A hit that carried an ailment but was fully blocked by guard: no HP lost, so no ailment.
 function testHandShieldNote(h,plan){
@@ -1103,7 +1115,9 @@ function testHandCountAttacks(due){
  for(const {f,plan} of due){f.testAttacks=(f.testAttacks||0)+1;if(plan&&plan.ailment)f.testAilmentAttacks=(f.testAilmentAttacks||0)+1;}
 }
 function handShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function handIds(id,n){return Array.from({length:n},(_,i)=>id.toUpperCase()+(i+1));}
+// Deck range per character: cards 1-8 or 9-16 (test buttons; kept in the address as dm / dr / dk = 9).
+function handHigh(id){return new URLSearchParams(location.search).get('d'+id)==='9';}
+function handIds(id,n){const off=handHigh(id)?8:0;return Array.from({length:n},(_,i)=>id.toUpperCase()+(off+i+1));}
 function handDraw(st){
  while(st.hand.length<4){
   if(!st.deck.length){if(!st.discard.length)break;st.deck=handShuffle(st.discard);st.discard=[];}
@@ -1112,12 +1126,13 @@ function handDraw(st){
 }
 function testHandInit(){
  const f=new URLSearchParams(location.search).get('form');testHandForm=HAND_FORMS[f]?f:'A';
- testHandState={};
+ testHandState={firstActor:null};
  for(const id of ids){
   const st={hand:[],used:new Set(),rest:new Set(),deck:[],discard:[],played:0};
   if(testHandForm==='A')st.hand=handIds(id,4);
   else if(testHandForm==='B')st.hand=handIds(id,6);
   else{st.deck=handShuffle(handIds(id,8));handDraw(st);}
+  if(id==='m')st.hits=[0,0,0]; // Mio's hits per part this turn
   testHandState[id]=st;
   chars[id].hp=chars[id].max=TEST_ALLY_HP[id];
  }
@@ -1130,6 +1145,7 @@ function testHandNewTurn(){
  // Keep 禍 on odd and 灰 on even turns even after a break reset their wait.
  foes[0].wait=turn%2===1?1:2;foes[2].wait=turn%2===0?1:2;
  const events=testHandEvents;testHandEvents=[];
+ testHandState.m.hits=[0,0,0];testHandState.firstActor=null;
  for(const id of ids){const st=testHandState[id];
   const usedLast=st.used;
   st.rest=testHandForm==='B'?new Set(st.used):new Set();st.used=new Set();st.played=0;
@@ -1141,23 +1157,144 @@ function testHandNewTurn(){
 // Parts that attack this turn with a face forecast, and the allies they target.
 function handDueParts(){return foes.map((f,i)=>i).filter(i=>{const f=foes[i];return f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun');});}
 function handTargeted(id){return handDueParts().some(i=>attackTargets(foes[i],i).includes(id));}
-// Card damage before the weapon bonus and before frost, with the description's conditions.
+// ---- Card rules in the test (all numbers below are final: guard / heal / reductions are already x3) ----
+// A part "targets" an ally when it attacks this turn with a face forecast that includes the ally (all-target includes everyone).
+// Charge-up "?" panels and resting parts target nobody.
+function handPartTargets(part,id){
+ const f=foes[part];if(!(f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun')))return false;
+ return attackTargets(f,part).includes(id);
+}
+function mioHits(part){return testHandState.m.hits[part]||0;}
+// Mio's 16 cards: hit list and whether a condition makes the card stronger, for a given part.
+function mioCardPlan(cardId,part){
+ const c=chars.m,h=mioHits(part),r=(n,k)=>Array(k).fill(n);let hits=[],boosted=false;
+ switch(cardId){
+  case 'M1':hits=r(25,2);break;
+  case 'M2':boosted=handPartTargets(part,'m');hits=r(20,boosted?3:2);break;
+  case 'M3':boosted=ids.some(x=>x!=='m'&&chars[x].hp>0&&handPartTargets(part,x));hits=r(20,boosted?3:2);break;
+  case 'M4':hits=[35];break;
+  case 'M5':hits=r(35,3);break;
+  case 'M6':boosted=h>=2;hits=r(h>=4?25:h>=2?20:15,3);break;
+  case 'M7':boosted=h>=3;hits=r(30,3).concat(boosted?[40]:[]);break;
+  case 'M8':hits=[25,35,45,55];break;
+  case 'M9':hits=r(12,4);break;
+  case 'M10':hits=r(10,2);break;
+  case 'M11':boosted=c.hp*2<=c.max;hits=r(15,boosted?5:3);break;
+  case 'M12':boosted=h>=4;hits=r(30,boosted?5:3);break;
+  case 'M13':boosted=h>=4;hits=r(18,2);break;
+  case 'M14':boosted=c.guard===0;hits=r(18,boosted?6:5);break;
+  case 'M15':boosted=h>=4;hits=r(15,2);break;
+  case 'M16':boosted=boss.hp*100<=boss.max*35;hits=r(30,boosted?8:6);break;
+ }
+ return {hits,boosted};
+}
+// Reika / Koharu: single-hit damage before the weapon bonus and frost, with the description's conditions.
 function handCardDamage(id,card,foe){
- const c=chars[id],st=testHandState[id];let d=card.damage;
- if(card.id==='M2'&&handTargeted('m'))d=60;
- if(card.id==='M3'&&ids.some(x=>x!=='m'&&chars[x].hp>0&&handTargeted(x)))d=60;
- if(card.id==='M6'&&st.played>0)d=70;
- if(card.id==='M7'&&c.hp*2<=c.max)d=130;
- if(card.id==='K7')d+=8*(foe.poison||0);
+ const c=chars[id];let d=card.damage;
+ if(card.id==='K7'||card.id==='K11')d+=8*(foe.poison||0);
+ if(card.id==='K16'&&(foe.poison||0)>=6)d+=70;
+ if(card.id==='R11'&&c.guard>=90)d+=35;
+ if(card.id==='K13')d+=8*Math.floor((foe.poison||0)/2);
  return d;
 }
 function handWouldBreak(id,card,foe){
  if(card.id!=='R7'||foe.broken)return false;
- const n=modifiedDamage(handCardDamage(id,card,foe),chars[id],foe),dealt=foe.broken?Math.round(n*1.2):n;
- return foe.breakDamage+dealt>=foe.breakLimit;
+ const n=modifiedDamage(handCardDamage(id,card,foe),chars[id],foe);
+ return foe.breakDamage+n>=foe.breakLimit;
 }
-// Glow: the card's condition is met now, so it beats its base number (weapon bonus not counted).
-function handBoosted(id,card){const foe=foes[selectedFoe];return handCardDamage(id,card,foe)>card.damage||handWouldBreak(id,card,foe);}
+function handLowestAlly(){return ids.filter(x=>chars[x].hp>0).sort((a,b)=>chars[a].hp-chars[b].hp||ids.indexOf(a)-ids.indexOf(b))[0];}
+// Glow: the card's condition is met now (weapon bonus not counted). Mio: any part where it would be met.
+function handBoosted(id,card){
+ if(id==='m')return foes.some((f,i)=>f.hp>0&&mioCardPlan(card.id,i).boosted);
+ const foe=foes[selectedFoe],p=foe.poison||0;
+ if(handCardDamage(id,card,foe)>card.damage||handWouldBreak(id,card,foe))return true;
+ switch(card.id){
+  case 'R6':return handPartTargets(selectedFoe,'r');
+  case 'R13':return handDueParts().some(i=>foes[i].attackKind==='all');
+  case 'R15':return !testHandState.firstActor||testHandState.firstActor==='r';
+  case 'K9':return p+2>=4;
+  case 'K14':return p+2>=6;
+ }
+ return false;
+}
+// Mio: multi-hit card. Cost, charge, curse, guard, heal and reductions once per card; weapon bonus on the 1st hit only.
+function mioResolve(card){
+ const c=chars.m,part=selectedFoe,foe=foes[part],plan=mioCardPlan(card.id,part),notes=[];
+ if(card.id==='M10'){const pay=Math.max(0,Math.min(24,c.hp-1));c.hp-=pay;notes.push(`HP −${pay}`);}
+ if(card.id==='M4')c.guard+=45;
+ if(card.id==='M13'){const g=plan.boosted?90:45;ids.filter(x=>chars[x].hp>0).forEach(x=>chars[x].guard+=g);notes.push(`味方全員に盾+${g}`);}
+ if(card.id==='M15'){const heal=Math.min(c.max-c.hp,plan.boosted?72:36);c.hp+=heal;notes.push(`HP +${heal}`);}
+ // M8: only when the struck part makes a single-target attack this turn.
+ if(card.id==='M8'&&ids.some(x=>handPartTargets(part,x))&&foe.attackKind==='single'){foe.weak=(foe.weak||0)+120;notes.push(`${foe.glyph}の攻撃 −120`);}
+ const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus('m'):0;
+ const dealt=[];
+ for(let k=0;k<plan.hits.length;k++){
+  if(ended||boss.hp<=0)break; // the boss fell: the remaining hits are cut
+  const n=modifiedDamage(plan.hits[k]+(k===0?bonus:0),c,foe),before=boss.hp;
+  queueAttack(n,'m');dealt.push(before-boss.hp);testHandState.m.hits[part]++;
+ }
+ // One short number per hit instead of the single big number of each hit.
+ foeFx.get(part)?.layer.querySelectorAll('.attack-number').forEach(e=>e.remove());
+ if(typeof showHitNumbers==='function')showHitNumbers(part,dealt);
+ const wnote=typeof mioAfterCardHit==='function'?mioAfterCardHit('m',bonus):'';
+ say(`美桜：${card.name} → ${dealt.length}Hit 合計${dealt.reduce((a,b)=>a+b,0)}ダメージ`+(notes.length?'（'+notes.join('・')+'）':'')+wnote);
+}
+// Reika / Koharu: effects before the hit (guard, poison, reductions). Returns notes.
+function handRKEffects(id,card,foe,part){
+ const c=chars[id],notes=[],addPoison=n=>{foe.poison+=n;},weak=(f,n)=>{f.weak=(f.weak||0)+n;};
+ switch(card.id){
+  case 'R2':c.guard+=60;break;
+  case 'R3':weak(foe,30);break;
+  case 'R5':c.guard+=90;break;
+  case 'R6':if(handPartTargets(part,'r')){weak(foe,60);notes.push(`${foe.glyph}の攻撃 −60`);}break;
+  case 'R8':c.guard+=90;break;
+  case 'R9':c.guard+=105;break;
+  case 'R10':weak(foe,36);break;
+  case 'R12':c.guard+=240;break;
+  case 'R13':for(const i of handDueParts())if(foes[i].attackKind==='all'){weak(foes[i],60);notes.push(`${foes[i].glyph}の全体攻撃 −60`);}break;
+  case 'R14':{const t=handLowestAlly();if(t){chars[t].guard+=45;notes.push(`${chars[t].name}に盾+45`);}}break;
+  case 'R15':if(!testHandState.firstActor||testHandState.firstActor==='r'){c.guard+=120;notes.push('最初に行動：盾+120');}break;
+  case 'R16':weak(foe,75);break;
+  case 'K1':addPoison(2);break;
+  case 'K2':addPoison(1);break;
+  case 'K3':addPoison(1);weak(foe,24);break;
+  case 'K4':addPoison(1);c.guard+=75;break;
+  case 'K5':addPoison(3);break;
+  case 'K6':addPoison(2);c.guard+=60;break;
+  case 'K8':addPoison(4);break;
+  case 'K9':addPoison(2);if(foe.poison>=4){c.guard+=75;notes.push('盾+75');}break;
+  case 'K10':addPoison(1);break;
+  case 'K12':addPoison(4);break;
+  case 'K13':{const used=Math.floor(foe.poison/2);foe.poison-=used;if(used)notes.push(`毒${used}を消費`);}break;
+  case 'K14':addPoison(2);if(foe.poison>=6){addPoison(2);notes.push('毒+2');}break;
+  case 'K15':addPoison(2);weak(foe,45);break;
+ }
+ return notes;
+}
+function testHandPlay(idx){
+ const id=active,c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
+ if(!handPlayable(id,idx)){if(statusBag(c).shock&&idx===0)say(c.name+'：感電でいちばん左の札は使えない');return;}
+ const foe=foes[selectedFoe];if(!foe||foe.hp<=0)return;
+ st.used.add(cardId);
+ c.cost-=card.cost;c.charge=Math.min(originalWeapons[id].charge,c.charge+card.cost);
+ const curse=statusPower(c,'curse'),curseLoss=curse&&card.cost&&!(typeof testNoDamage!=='undefined'&&testNoDamage)?Math.min(c.hp,(TEST_CURSE[card.cost]||0)*curse):0;c.hp-=curseLoss;
+ if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
+ if(id==='m'){mioResolve(card);}
+ else{
+  // The damage of K13 depends on the poison before it is consumed.
+  let damage=handCardDamage(id,card,foe);
+  const notes=handRKEffects(id,card,foe,selectedFoe);
+  const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=bonus;
+  damage=modifiedDamage(damage,c,foe);
+  const wasBroken=foe.broken;
+  queueAttack(damage,id);
+  if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=90;notes.push('部位を壊して盾+90');}
+  say(c.name+'：'+card.name+' → '+damage+'ダメージ'+(notes.length?'（'+notes.join('・')+'）':''));
+ }
+ if(!testHandState.firstActor)testHandState.firstActor=id;
+ st.played++;
+ render();
+}
 function handPlayable(id,idx){
  const c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
  if(!card||ended||resolving||turnClosing||c.hp<=0||c.cost<card.cost||st.used.has(cardId)||st.rest.has(cardId))return false;
@@ -1169,42 +1306,12 @@ function renderTestHand(c){
  const id=active,st=testHandState[id],six=st.hand.length>4&&testHandForm==='B';
  $('cards').classList.toggle('hand6',six);
  // The long-press explanation reads chars[active].cards; keep it in step with the shown hand.
- c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],testHandDesc(k.desc),k.effect];});
+ c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],handCardDesc(cid,k.desc),k.effect];});
  $('cards').innerHTML=st.hand.map((cid,i)=>{const k=CARDS[cid],can=handPlayable(id,i),mark=st.rest.has(cid)?'休':st.used.has(cid)?'済':'';
   const glow=can&&handBoosted(id,k);
-  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${testHandDesc(k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${handCardDesc(cid,k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
  $('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>testHandPlay(+b.dataset.i));
  $('handname').textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
-}
-function testHandPlay(idx){
- const id=active,c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
- if(!handPlayable(id,idx)){if(statusBag(c).shock&&idx===0)say(c.name+'：感電でいちばん左の札は使えない');return;}
- const foe=foes[selectedFoe];if(!foe||foe.hp<=0)return;
- st.used.add(cardId);
- c.cost-=card.cost;c.charge=Math.min(originalWeapons[id].charge,c.charge+card.cost);
- const curse=statusPower(c,'curse'),curseLoss=curse&&card.cost&&!(typeof testNoDamage!=='undefined'&&testNoDamage)?Math.min(c.hp,(TEST_CURSE[card.cost]||0)*curse):0;c.hp-=curseLoss;
- if(curseLoss)say(c.name+'：呪詛 −'+curseLoss);if(c.hp<=0){render();return;}
- let damage=handCardDamage(id,card,foe);const notes=[];
- const e=card.effect,guard=({guard15:15,guard20:20,guard30:30,poisonguard:card.id==='K6'?20:25}[e]||0)*TEST_ALLY_SCALE;
- if(guard)c.guard+=guard;
- if(e==='weaken10')foe.weak=(foe.weak||0)+10*TEST_ALLY_SCALE;
- const poison={poison1:1,poisonweak:1,poisonguard:card.id==='K6'?2:1,poison2:2,poison3:3,poison4:4}[e]||0;
- if(poison)foe.poison+=poison;
- if(e==='poisonweak')foe.weak=(foe.weak||0)+8*TEST_ALLY_SCALE;
- if(card.id==='M8'){ // reduce the strongest single-target forecast attack by 40
-  let best=-1,bestDmg=-1;
-  for(const i of handDueParts()){const f=foes[i],t=attackTargets(f,i);if(t.length!==1)continue;
-   const d=modifiedDamage(Math.max(0,(f.plan?f.plan.damage:f.damage)-(f.weak||0)),f,chars[t[0]]);if(d>bestDmg){best=i;bestDmg=d;}}
-  if(best>=0){foes[best].weak=(foes[best].weak||0)+40*TEST_ALLY_SCALE;notes.push(`${foes[best].glyph}の攻撃 −${40*TEST_ALLY_SCALE}`);}
- }
- const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=bonus;
- damage=modifiedDamage(damage,c,foe);
- const wasBroken=foe.broken;
- queueAttack(damage,id);
- if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=30*TEST_ALLY_SCALE;notes.push(`部位を壊して盾+${30*TEST_ALLY_SCALE}`);}
- const wnote=typeof mioAfterCardHit==='function'?mioAfterCardHit(id,bonus):'';
- st.played++;
- say(c.name+'：'+card.name+' → '+damage+'ダメージ'+(notes.length?'（'+notes.join('・')+'）':'')+wnote);render();
 }
 if(TEST_HAND){
  testHandInit();
@@ -1216,6 +1323,11 @@ if(TEST_HAND){
  const go=f=>{const u=new URL(location.href);u.searchParams.set('test','hand');u.searchParams.set('form',f);location.replace(u.toString());};
  bar.querySelectorAll('[data-hand-form]').forEach(b=>b.onclick=()=>go(b.dataset.handForm));
  bar.querySelector('[data-hand-restart]').onclick=()=>go(testHandForm);
+ // Deck switch per character (cards 1-8 / 9-16); switching restarts the battle.
+ const deck=document.createElement('div');deck.id='hand-deck-test';deck.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:8px';
+ deck.innerHTML=ids.map(id=>`<button type="button" class="test-toggle" data-hand-deck="${id}" aria-pressed="${handHigh(id)}">${chars[id].name}の山札：${handHigh(id)?'9〜16':'1〜8'}</button>`).join('');
+ document.getElementById('mio-weapon-test').append(deck);
+ deck.querySelectorAll('[data-hand-deck]').forEach(b=>b.onclick=()=>{const u=new URL(location.href),k='d'+b.dataset.handDeck;if(handHigh(b.dataset.handDeck))u.searchParams.delete(k);else u.searchParams.set(k,'9');location.replace(u.toString());});
 }
 window.addEventListener('resize',drawLines);window.addEventListener('hashchange',drawLines);chooseNextTargets();render();
 </script><style>
@@ -1536,6 +1648,9 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 /* Poison stacks on each boss part (display only). Overlay above the boss art; never takes taps. */
 .poison-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .poison-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap;transform:translateX(-50%)}
+.hit-pop{position:absolute;transform:translateX(-50%);color:#ffe3da;font-size:13px;font-weight:900;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;animation:hit-pop .6s ease-out forwards}
+@keyframes hit-pop{0%{opacity:0;margin-top:2px}20%{opacity:1}100%{opacity:0;margin-top:-16px}}
+@media (prefers-reduced-motion:reduce){.hit-pop{animation:none}}
 .poison-tick{position:absolute;transform:translateX(-50%);color:#a6e597;font-size:13px;font-weight:900;text-shadow:0 1px 3px #000;white-space:nowrap;animation:poison-tick 1.1s ease-out forwards}
 @keyframes poison-tick{0%{opacity:0;margin-top:4px}15%{opacity:1}100%{opacity:0;margin-top:-14px}}
 @media (prefers-reduced-motion:reduce){.poison-tick{animation:poison-tick-still 1.1s linear forwards}@keyframes poison-tick-still{0%,80%{opacity:1}100%{opacity:0}}}
@@ -1551,14 +1666,34 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
   if(!part)return null;const r=part.getBoundingClientRect();
   return {x:r.left-base.left+r.width*ANCHOR[i],y:f.top-base.top+TOP};
  }
+ // ☠N (poison) and, in the hand test, ⚔N (Mio's hits on that part this turn) share one small pill per part.
+ // The pill is kept left of 呪's marker (middle column) and inside the boss frame.
  function update(){
   layer.querySelectorAll('.poison-badge').forEach(e=>e.remove());
-  foes.forEach((f,i)=>{if(!(f.poison>0))return;const s=spot(i);if(!s)return;
-   const b=document.createElement('span');b.className='poison-badge';b.textContent='☠'+f.poison;b.style.left=s.x+'px';b.style.top=s.y+'px';layer.append(b);});
+  const base=arena.getBoundingClientRect(),frame=foeEl.getBoundingClientRect();
+  foes.forEach((f,i)=>{
+   const hits=(typeof testHandState!=='undefined'&&testHandState&&testHandState.m&&testHandState.m.hits)?testHandState.m.hits[i]:0;
+   if(!(f.poison>0)&&!(hits>0))return;const s=spot(i);if(!s)return;
+   const b=document.createElement('span');b.className='poison-badge';
+   b.textContent=[f.poison>0?'☠'+f.poison:'',hits>0?'⚔'+hits:''].filter(Boolean).join(' ');
+   b.style.top=s.y+'px';b.style.transform='none';layer.append(b);
+   const w=b.offsetWidth,part=foeEl.querySelectorAll('.boss-part')[i].getBoundingClientRect();
+   let left=s.x-w/2;
+   const maxRight=i===1?part.left-base.left+part.width*0.6-4:frame.right-base.left-4;
+   left=Math.min(left,maxRight-w);left=Math.max(left,frame.left-base.left+40);
+   b.style.left=left+'px';b.dataset.center=String(left+w/2);
+  });
  }
+ // One short number per hit of a multi-hit card, around the struck part.
+ window.showHitNumbers=(i,list)=>{
+  const part=foeEl.querySelectorAll('.boss-part')[i];if(!part)return;const base=arena.getBoundingClientRect(),r=part.getBoundingClientRect();
+  list.forEach((n,k)=>setTimeout(()=>{const t=document.createElement('span');t.className='hit-pop';t.textContent='−'+n;
+   t.style.left=(r.left-base.left+r.width/2+((k%3)-1)*18)+'px';t.style.top=(r.top-base.top+r.height*0.45+(k%2)*10)+'px';layer.append(t);setTimeout(()=>t.remove(),650);},k*70));
+ };
  // Poison damage at the end of the enemy phase: a short "−N" at that part.
  window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
-  t.style.left=s.x+'px';t.style.top=(s.y+20)+'px';layer.append(t);setTimeout(()=>t.remove(),1200);};
+  const pill=[...layer.querySelectorAll('.poison-badge')].find(b=>Math.abs(+b.dataset.center-s.x)<60);
+  t.style.left=(pill?+pill.dataset.center:s.x)+'px';t.style.top=(s.y+20)+'px';layer.append(t);setTimeout(()=>t.remove(),1200);};
  new MutationObserver(update).observe(foeEl,{childList:true});
  window.addEventListener('resize',update);
  update();
