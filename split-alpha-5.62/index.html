@@ -1309,9 +1309,68 @@ function renderTestHand(c){
  c.cards=st.hand.map(cid=>{const k=CARDS[cid];return [k.name,k.cost,k.damage,HAND_ART[id],handCardDesc(cid,k.desc),k.effect];});
  $('cards').innerHTML=st.hand.map((cid,i)=>{const k=CARDS[cid],can=handPlayable(id,i),mark=st.rest.has(cid)?'休':st.used.has(cid)?'済':'';
   const glow=can&&handBoosted(id,k);
-  return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${handCardDesc(cid,k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
- $('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>testHandPlay(+b.dataset.i));
- $('handname').textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
+  // Tap only reads the card (see the drag script); a card is used by dragging it onto a boss part.
+  const lifted=handDrag&&handDrag.kind==='card'&&handDrag.dragging&&handDrag.idx===i;
+  return `<button type="button" class="card hand-card${glow?' hand-glow':''}${can?'':' hand-off'}${mark?' has-mark':''}${lifted?' hand-lifted':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" aria-disabled="${!can}"><span class="cost">${k.cost}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${handShortDesc(cid,k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+ const hn=$('handname');
+ if(!handHintDone){hn.innerHTML='<span class="hand-hint">札を敵へ引っぱって使う</span>';}
+ else hn.textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
+}
+// Short text printed on the card face in the hand test (the full text is shown when the card is held).
+const HAND_SHORT={M1:'25×2Hit',M2:'20×2。美桜狙いなら×3',M3:'20×2。仲間狙いなら×3',M4:'35×1、自分に盾45',M5:'35×3Hit',
+ M6:'15×3。累計2以上で20、4以上で25',M7:'30×3。累計3以上で＋40',M8:'4Hit。単体攻撃を−120',M9:'12×4Hit',M10:'10×2。HP24を払う',
+ M11:'15×3。HP半分以下で×5',M12:'30×3。累計4以上で×5',M13:'18×2。全員に盾45（累計4以上で90）',M14:'18×5。盾0なら×6',
+ M15:'15×2。HP+36（累計4以上で72）',M16:'30×6。ボスHP35%以下で×8'};
+function handShortDesc(cid,desc){return HAND_SHORT[cid]||handCardDesc(cid,desc);}
+var handDrag=null,handHintDone=false;
+// Why a card in the hand cannot be used now ('' when it can).
+function handBlockReason(id,idx){
+ const c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
+ if(!card)return '使えない';
+ if(ended)return '戦闘は終わった';
+ if(resolving||turnClosing)return '敵の行動中は使えない';
+ if(c.hp<=0)return '倒れているので使えない';
+ if(statusPower(c,'stun'))return 'スタン中で使えない';
+ if(st.rest.has(cardId))return '休み（前のターンに使った札）';
+ if(st.used.has(cardId))return 'このターンはもう使った';
+ if(idx===0&&statusBag(c).shock)return '感電で封じられている';
+ if(c.cost<card.cost)return `Costが足りない（いま${c.cost}）`;
+ return handPlayable(id,idx)?'':'使えない';
+}
+function handWeaponReason(id){
+ const c=chars[id],need=originalWeapons[id].charge;
+ if(ended)return '戦闘は終わった';
+ if(resolving||turnClosing)return '敵の行動中は使えない';
+ if(c.hp<=0)return '倒れているので使えない';
+ if(statusPower(c,'stun'))return 'スタン中で使えない';
+ if(c.charge<need)return `チャージが足りない（${c.charge}/${need}）`;
+ return '';
+}
+// Damage a card would deal to a part, worked out with the same rules as testHandPlay / mioResolve / playerAttack,
+// without changing anything. Returns {total,label}.
+function handPreview(id,idx,part){
+ const c=chars[id],card=CARDS[testHandState[id].hand[idx]],foe=foes[part];
+ const curse=statusPower(c,'curse'),curseLoss=curse&&card.cost&&!(typeof testNoDamage!=='undefined'&&testNoDamage)?Math.min(c.hp,(TEST_CURSE[card.cost]||0)*curse):0;
+ if(c.hp-curseLoss<=0)return {total:0,label:'呪詛で倒れる'};
+ let hp=boss.hp,broken=foe.broken,bd=foe.breakDamage;
+ const hit=n=>{if(hp<=0||foe.hp<=0)return null;const raw=broken?Math.round(n*1.2):n,got=Math.min(hp,raw);hp-=got;
+  if(!broken){bd=Math.min(foe.breakLimit,bd+raw);if(bd>=foe.breakLimit)broken=true;}return got;};
+ if(id==='m'){
+  const keep=c.hp;c.hp-=curseLoss;const plan=mioCardPlan(card.id,part);c.hp=keep; // M11 reads the HP after the curse
+  const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus('m'):0;let total=0;
+  for(let k=0;k<plan.hits.length;k++){const got=hit(modifiedDamage(plan.hits[k]+(k===0?bonus:0),c,foe));if(got===null)break;total+=got;}
+  const runs=[];for(const v of plan.hits){const r=runs[runs.length-1];if(r&&r.v===v)r.n++;else runs.push({v,n:1});}
+  const shape=runs.length===1?`${runs[0].v}×${runs[0].n}Hit`:runs.map(r=>r.n>1?`${r.v}×${r.n}`:r.v).join('+')+`（${plan.hits.length}Hit）`;
+  return {total,label:`${shape}${bonus?`＋武器${bonus}`:''}＝${total}`};
+ }
+ let damage=handCardDamage(id,card,foe)+(typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0);
+ const got=hit(modifiedDamage(damage,c,foe))||0;
+ return {total:got,label:`${got}ダメージ`};
+}
+function handWeaponPreview(id,part){
+ const keep=mioLastBites,n=typeof weaponFireDamage==='function'?weaponFireDamage(id):originalWeapons[id].damage;mioLastBites=keep;
+ const foe=foes[part],raw=foe.broken?Math.round(n*1.2):n,got=Math.min(boss.hp,raw);
+ return {total:got,label:`武器技 ${got}ダメージ`};
 }
 if(TEST_HAND){
  testHandInit();
@@ -1489,6 +1548,7 @@ function display(id){
 document.addEventListener('pointerdown',e=>{
  const el=e.target.closest?.('.equipment-tile');
  if(!el||!ids.has(el.id))return;
+ if(el.id==='weaponinspect'&&typeof TEST_HAND!=='undefined'&&TEST_HAND)return; // the hand test has its own hold/drag
  if(held)return;clear();held=el.id;activePointer=e.pointerId;startX=e.clientX;startY=e.clientY;
  display(held);
  try{el.setPointerCapture(e.pointerId)}catch(_){}
@@ -1555,6 +1615,7 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  function close(){clearTimeout(timer);timer=null;held=false;card=null;tip.classList.remove('visible')}
  document.addEventListener('touchstart',e=>{
   const el=e.target.closest?.('.card');if(!el||e.touches.length!==1)return;
+  if(typeof TEST_HAND!=='undefined'&&TEST_HAND)return; // the hand test has its own hold/drag
   close();card=el;startX=e.touches[0].clientX;startY=e.touches[0].clientY;
   timer=setTimeout(show,360);
  },{capture:true,passive:true});
@@ -1705,4 +1766,128 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  </div></aside>
 <script>
 (()=>{const toggle=document.getElementById('preview-toggle'),options=document.getElementById('preview-options');toggle.onclick=()=>{options.style.display=options.style.display==='flex'?'none':'flex'};options.querySelectorAll('button').forEach(b=>{b.style.cssText='background:#49354f;color:#fff;border:1px solid #866c91;border-radius:5px;padding:6px';b.onclick=()=>{const v=b.dataset.preview;if(v==='off'||v==='normal')clearForecastTest();else history.replaceState(null,'','#preview='+v);drawLines();};});})();
-</script></body></html>
+</script><style>
+/* 手札テストの札の操作（?test=hand のときだけ。body.hand-test と .hand-card は手札テストでしか付かない） */
+body.hand-test #cards .card.hand-card,body.hand-test #weaponinspect{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+body.hand-test #cards .card.hand-card *,body.hand-test #weaponinspect *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.hand-test #cards .card.hand-card:active{transform:none}
+.card.hand-card.hand-off{opacity:.38}
+.card.hand-card.hand-lifted{opacity:.18}
+.card.hand-card .name{align-self:stretch;min-height:21px;margin-top:0;padding-left:21px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.25}
+.card.hand-card.has-mark .name{padding-right:17px}
+.card.hand-card .effect{margin-top:5px;font-size:10px;line-height:1.3}
+.cards.hand6 .card.hand-card .name{padding-left:17px;min-height:17px;display:block;line-height:17px}
+.hand-hint{display:inline-block;padding:0 8px;border:1px solid #e9c98a99;border-radius:9px;background:#2d2519;color:#f3dfb8;font-size:10px;line-height:15px;white-space:nowrap}
+#hand-zoom{position:fixed;z-index:100;left:50%;transform:translateX(-50%);width:min(260px,calc(100vw - 32px));box-sizing:border-box;padding:12px 14px 13px;border:2px solid var(--zc,#b9979c);border-radius:10px;background:linear-gradient(160deg,#54404a 0%,#342b38 45%,#1d1d28 100%);color:#f5ede4;box-shadow:0 8px 30px #000c;pointer-events:none;display:none;white-space:pre-wrap;-webkit-user-select:none;user-select:none}
+#hand-zoom.show{display:block}
+#hand-zoom .hz-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+#hand-zoom .hz-cost{flex:none;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:#e9c88b;color:#2a2327;font-size:16px;font-weight:900}
+#hand-zoom .hz-name{font-size:16px;font-weight:850;color:#efd2a6;line-height:1.3}
+#hand-zoom .hz-body{font-size:14px;line-height:1.55}
+#hand-zoom .hz-reason{margin-top:8px;padding:3px 8px;border-radius:5px;background:#5a2a30;border:1px solid #c27b7f;color:#ffe0dc;font-size:13px;font-weight:700}
+.hand-ghost{position:fixed;z-index:101;margin:0!important;pointer-events:none;opacity:.94;box-shadow:0 8px 22px #000c,0 0 0 2px #f3dfb8;transform:none!important;transition:none}
+#hand-drop-label{position:fixed;z-index:102;transform:translateX(-50%);padding:2px 8px;border:1px solid #ffd98a;border-radius:6px;background:#1a1520ee;color:#fff1cf;font-size:13px;font-weight:850;white-space:nowrap;pointer-events:none;display:none}
+#hand-drop-label.show{display:block}
+.boss-part.hand-drop{border-color:#ffe2a6!important;background:rgba(255,217,138,.2)!important;box-shadow:inset 0 0 0 2px #ffd98a,inset 0 0 22px #ffd98a88!important}
+</style>
+<script>
+// 手札テスト：指を置くと札を大きく出す（読むだけ）。10px 以上動かすと引っぱりになり、ボスの部位の上で離すとその部位に使う。
+// 武器の絵も同じ（チャージがたまっているときだけ引っぱれる）。?test=hand を付けないときは何もしない。
+(()=>{
+ if(typeof TEST_HAND==='undefined'||!TEST_HAND)return;
+ document.body.classList.add('hand-test');
+ const DRAG_PX=10,LIFT_PX=14;
+ const zoom=document.createElement('div');zoom.id='hand-zoom';zoom.setAttribute('role','status');document.body.append(zoom);
+ const label=document.createElement('div');label.id='hand-drop-label';document.body.append(label);
+ let ghost=null,hover=null;
+ const esc=t=>String(t).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+ function placeZoom(){
+  zoom.style.top='auto';zoom.style.bottom=(innerHeight-document.getElementById('cards').getBoundingClientRect().top+8)+'px';
+  if(zoom.getBoundingClientRect().top<6){zoom.style.bottom='auto';zoom.style.top='6px';}
+ }
+ function showZoom(cost,name,body,reason,color){
+  zoom.innerHTML=`<div class="hz-head">${cost===null?'':`<span class="hz-cost">${cost}</span>`}<span class="hz-name">${esc(name)}</span></div><div class="hz-body">${esc(body)}</div>${reason?`<div class="hz-reason">${esc(reason)}</div>`:''}`;
+  zoom.style.setProperty('--zc',color||'#b9979c');zoom.classList.add('show');placeZoom();
+ }
+ function hideZoom(){zoom.classList.remove('show');}
+ function weaponText(id){
+  const c=chars[id],w=weaponDescriptions[id];
+  return {name:c.name+'｜'+w.name,body:w.description+'\n現在のチャージ：'+c.charge+'/'+originalWeapons[id].charge+(id==='m'&&typeof mioWeaponLabel==='function'?'\n\n※試作の効果です（品質5）。':'\n\n※正式な武器効果は未接続です。')};
+ }
+ function partAt(x,y){
+  const units=[...document.querySelectorAll('#foe .foe-unit')];
+  for(let i=0;i<units.length;i++){const r=units[i].getBoundingClientRect();if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom&&foes[i]&&foes[i].hp>0)return i;}
+  return null;
+ }
+ function setHover(part){
+  if(part===hover)return;hover=part;
+  document.querySelectorAll('#foe .foe-unit').forEach((u,i)=>u.classList.toggle('hand-drop',i===part));
+  if(part===null){label.classList.remove('show');return;}
+  const d=handDrag,p=d.kind==='card'?handPreview(d.id,d.idx,part):handWeaponPreview(d.id,part);
+  label.textContent=p.label;label.classList.add('show');
+  const r=document.querySelectorAll('#foe .foe-unit')[part].getBoundingClientRect(),w=label.getBoundingClientRect().width;
+  label.style.left=Math.max(6+w/2,Math.min(innerWidth-6-w/2,r.left+r.width/2))+'px';label.style.top=(r.top+4)+'px';
+ }
+ function source(){const d=handDrag;return d.kind==='card'?document.querySelector(`#cards .card[data-i="${d.idx}"]`):document.getElementById('weaponinspect');}
+ function startDrag(){
+  const d=handDrag,src=source();if(!src)return false;
+  hideZoom();d.dragging=true;
+  const r=src.getBoundingClientRect();ghost=src.cloneNode(true);ghost.removeAttribute('id');ghost.classList.add('hand-ghost');ghost.classList.remove('hand-lifted');
+  ghost.style.width=r.width+'px';ghost.style.height=r.height+'px';d.w=r.width;d.h=r.height;document.body.append(ghost);
+  if(d.kind==='card')src.classList.add('hand-lifted');else src.style.opacity='.25';
+  return true;
+ }
+ function moveGhost(x,y){
+  const d=handDrag;ghost.style.left=(x-d.w/2)+'px';ghost.style.top=(y-LIFT_PX-d.h)+'px';
+  setHover(partAt(x,y-LIFT_PX-d.h/2)); // the card's centre decides the part
+ }
+ function finish(use){
+  const d=handDrag;if(!d)return;const part=hover;
+  setHover(null);hideZoom();if(ghost){ghost.remove();ghost=null;}
+  const src=source();if(src){src.classList.remove('hand-lifted');src.style.opacity='';}
+  handDrag=null;
+  if(!use||!d.dragging||part===null)return;
+  if(active!==d.id)return;
+  if(d.kind==='card'){
+   const st=testHandState[d.id];if(st.hand[d.idx]!==d.cardId||!handPlayable(d.id,d.idx))return;
+   selectedFoe=part;renderFoes();handHintDone=true;testHandPlay(d.idx);
+  }else{
+   if(handWeaponReason(d.id))return;
+   selectedFoe=part;renderFoes();document.getElementById('weaponuse')?.click();
+  }
+ }
+ document.addEventListener('pointerdown',e=>{
+  const card=e.target.closest?.('#cards .card.hand-card'),weap=card?null:e.target.closest?.('#weaponinspect');
+  if(!card&&!weap)return;
+  e.preventDefault();
+  if(handDrag||!e.isPrimary||e.button!==0)return;
+  const id=active;
+  if(card){
+   const idx=+card.dataset.i,cid=testHandState[id].hand[idx],k=CARDS[cid];if(!k)return;
+   const reason=handBlockReason(id,idx);
+   handDrag={kind:'card',id,idx,cardId:cid,pointer:e.pointerId,x0:e.clientX,y0:e.clientY,dragging:false,can:!reason};
+   showZoom(k.cost,k.name,handCardDesc(cid,k.desc),reason,FACE_BORDER[id]);
+  }else{
+   const reason=handWeaponReason(id),t=weaponText(id);
+   handDrag={kind:'weapon',id,pointer:e.pointerId,x0:e.clientX,y0:e.clientY,dragging:false,can:!reason};
+   showZoom(null,t.name,t.body,reason,FACE_BORDER[id]);
+  }
+  try{(card||weap).setPointerCapture(e.pointerId)}catch(_){}
+ },true);
+ window.addEventListener('pointermove',e=>{
+  const d=handDrag;if(!d||e.pointerId!==d.pointer)return;
+  e.preventDefault();
+  if(!d.dragging){if(!d.can||Math.hypot(e.clientX-d.x0,e.clientY-d.y0)<DRAG_PX)return;if(!startDrag())return;}
+  moveGhost(e.clientX,e.clientY);
+ },{capture:true,passive:false});
+ window.addEventListener('pointerup',e=>{if(handDrag&&e.pointerId===handDrag.pointer){e.preventDefault();finish(true);}},true);
+ window.addEventListener('pointercancel',e=>{if(handDrag&&e.pointerId===handDrag.pointer)finish(false);},true);
+ window.addEventListener('blur',()=>finish(false));
+ window.addEventListener('resize',()=>finish(false));
+ // No scrolling, text selection or long-press menu from a finger that starts on a card or the weapon picture.
+ const onHand=e=>e.target.closest?.('#cards .card.hand-card,#weaponinspect');
+ document.addEventListener('touchmove',e=>{if(handDrag||onHand(e))e.preventDefault();},{capture:true,passive:false});
+ for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,e=>{if(onHand(e))e.preventDefault();},true);
+})();
+</script>
+</body></html>
