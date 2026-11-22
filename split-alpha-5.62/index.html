@@ -1077,10 +1077,10 @@ function testHandRestPart(i){return TEST_HAND&&(i===0||i===2);}
 const TEST_HAND_DESC={
  M1:'25×2Hit',M2:'20×2Hit。叩く部位が美桜を狙っていれば20×3Hit',M3:'20×2Hit。叩く部位が美桜以外の仲間を狙っていれば20×3Hit',
  M4:'35×1Hit、自分に盾45',M5:'35×3Hit',M6:'累計Hit0〜1なら15×3、2〜3なら20×3、4以上なら25×3Hit',
- M7:'30×3Hit。累計Hit3以上なら、さらに40×1Hit',M8:'25・35・45・55の4Hit。叩いた部位の単体攻撃を120軽減',
+ M7:'30×3Hit。累計Hit3以上なら、さらに40×1Hit',M8:'25・35・45・55の4Hit。叩いた部位が、このターンに1人を狙う攻撃をするなら、その攻撃を120軽減',
  M9:'12×4Hit',M10:'10×2Hit、自分のHPを24払う（HP1は残る）',M11:'15×3Hit。HPが最大の半分以下なら15×5Hit',
- M12:'30×3Hit。累計Hit4以上なら30×5Hit',M13:'18×2Hit、味方全員に盾45。累計Hit4以上なら盾90',M14:'18×5Hit。自分の盾が0なら18×6Hit',
- M15:'15×2Hit、HP36回復。累計Hit4以上なら72回復',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit',
+ M12:'30×3Hit。累計Hit4以上なら30×5Hit',M13:'18×2Hit。倒れていない味方全員に盾45。累計Hit4以上なら盾90',M14:'18×5Hit。自分の盾が0なら18×6Hit',
+ M15:'15×2Hit。自分のHPを36回復（最大HPまで）。累計Hit4以上なら72回復',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit',
  R6:'敵に65。叩いた部位が麗華を狙っていれば、その部位の攻撃を60軽減',R14:'敵に40。HPがいちばん低い味方に盾45',
  K14:'敵に25、毒2。部位の毒が6以上なら、さらに毒2'
 };
@@ -1311,18 +1311,31 @@ function renderTestHand(c){
   const glow=can&&handBoosted(id,k);
   // Tap only reads the card (see the drag script); a card is used by dragging it onto a boss part.
   const lifted=handDrag&&handDrag.kind==='card'&&handDrag.dragging&&handDrag.idx===i;
-  return `<button type="button" class="card hand-card${glow?' hand-glow':''}${can?'':' hand-off'}${mark?' has-mark':''}${lifted?' hand-lifted':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" aria-disabled="${!can}"><span class="cost">${k.cost}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${handShortDesc(cid,k.desc)}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+  return `<button type="button" class="card hand-card hand-${id}${glow?' hand-glow':''}${can?'':' hand-off'}${mark?' has-mark':''}${lifted?' hand-lifted':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" aria-disabled="${!can}"><span class="cost">${k.cost}</span><img class="hand-art" src="${HAND_CARD_ART[cid]||PORTRAITS[id]}" alt="" draggable="false"><span class="name">${k.name}</span>${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
  const hn=$('handname');
  if(!handHintDone){hn.innerHTML='<span class="hand-hint">札を敵へ引っぱって使う</span>';}
  else hn.textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
 }
-// Short text printed on the card face in the hand test (the full text is shown when the card is held).
-const HAND_SHORT={M1:'25×2Hit',M2:'20×2。美桜狙いなら×3',M3:'20×2。仲間狙いなら×3',M4:'35×1、自分に盾45',M5:'35×3Hit',
- M6:'15×3。累計2以上で20、4以上で25',M7:'30×3。累計3以上で＋40',M8:'4Hit。単体攻撃を−120',M9:'12×4Hit',M10:'10×2。HP24を払う',
- M11:'15×3。HP半分以下で×5',M12:'30×3。累計4以上で×5',M13:'18×2。全員に盾45（累計4以上で90）',M14:'18×5。盾0なら×6',
- M15:'15×2。HP+36（累計4以上で72）',M16:'30×6。ボスHP35%以下で×8'};
-function handShortDesc(cid,desc){return HAND_SHORT[cid]||handCardDesc(cid,desc);}
+// Picture on each card face (card id -> image). For now every card points to its owner's face picture (temporary).
+const HAND_CARD_ART={
+ M1:PORTRAITS.m,M2:PORTRAITS.m,M3:PORTRAITS.m,M4:PORTRAITS.m,M5:PORTRAITS.m,M6:PORTRAITS.m,M7:PORTRAITS.m,M8:PORTRAITS.m,M9:PORTRAITS.m,M10:PORTRAITS.m,M11:PORTRAITS.m,M12:PORTRAITS.m,M13:PORTRAITS.m,M14:PORTRAITS.m,M15:PORTRAITS.m,M16:PORTRAITS.m,
+ R1:PORTRAITS.r,R2:PORTRAITS.r,R3:PORTRAITS.r,R4:PORTRAITS.r,R5:PORTRAITS.r,R6:PORTRAITS.r,R7:PORTRAITS.r,R8:PORTRAITS.r,R9:PORTRAITS.r,R10:PORTRAITS.r,R11:PORTRAITS.r,R12:PORTRAITS.r,R13:PORTRAITS.r,R14:PORTRAITS.r,R15:PORTRAITS.r,R16:PORTRAITS.r,
+ K1:PORTRAITS.k,K2:PORTRAITS.k,K3:PORTRAITS.k,K4:PORTRAITS.k,K5:PORTRAITS.k,K6:PORTRAITS.k,K7:PORTRAITS.k,K8:PORTRAITS.k,K9:PORTRAITS.k,K10:PORTRAITS.k,K11:PORTRAITS.k,K12:PORTRAITS.k,K13:PORTRAITS.k,K14:PORTRAITS.k,K15:PORTRAITS.k,K16:PORTRAITS.k,
+};
 var handDrag=null,handHintDone=false;
+// Words explained under the full text of a held card (shown only when the word appears in that text, in this order).
+// Add a row to explain another word.
+const HAND_TERMS=[
+ ['Hit','1回の当たり。「20×2Hit」は、20のダメージを2回当てる。'],
+ ['累計Hit','このターンに美桜がその部位に当てたHitの数。ターンの終わりに0に戻る。'],
+ ['狙っていれば','叩く部位の、このターンの予告が、その相手を狙っていること。予兆の「?」は誰も狙っていない。全体攻撃は全員を狙っている。'],
+ ['盾','そのターンだけ効く守り。敵の攻撃は、先に盾で受け止めて、残りがHPから減る。ターンの始めに0に戻る。'],
+ ['毒','部位ごとにたまり、敵の行動が終わるたびに、毒の数だけボスのHPが減る。減らずに残る。']
+];
+// A word inside a longer listed word (Hit inside 累計Hit) does not count by itself.
+function handTermsFor(text){
+ return HAND_TERMS.filter(([w])=>{let t=text;for(const [o] of HAND_TERMS)if(o!==w&&o.length>w.length&&o.includes(w))t=t.split(o).join('');return t.includes(w);});
+}
 // Why a card in the hand cannot be used now ('' when it can).
 function handBlockReason(id,idx){
  const c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
@@ -1709,9 +1722,13 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 /* Poison stacks on each boss part (display only). Overlay above the boss art; never takes taps. */
 .poison-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .poison-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap;transform:translateX(-50%)}
-.hit-pop{position:absolute;transform:translateX(-50%);color:#ffe3da;font-size:13px;font-weight:900;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;animation:hit-pop .6s ease-out forwards}
-@keyframes hit-pop{0%{opacity:0;margin-top:2px}20%{opacity:1}100%{opacity:0;margin-top:-16px}}
+.hit-pop{position:absolute;transform:translateX(-50%);line-height:1;color:#ffe3da;font-size:24px;font-weight:900;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;animation:hit-pop .6s ease-out forwards}
+@keyframes hit-pop{0%{opacity:0;margin-top:2px}20%{opacity:1}100%{opacity:0;margin-top:-6px}}
 @media (prefers-reduced-motion:reduce){.hit-pop{animation:none}}
+.hit-total{position:absolute;color:#fff1cf;font-size:29px;font-weight:900;text-shadow:0 2px 2px #1a0d11,0 0 10px #e6ad76;white-space:nowrap;animation:attackNumber .7s ease-out forwards}
+@keyframes hit-shake{0%,100%{translate:0 0}30%{translate:-3px 0}70%{translate:3px 0}}
+.boss-part.hit-shake{animation:hit-shake .1s linear}
+@media (prefers-reduced-motion:reduce){.hit-total{animation:none;transform:translateX(-50%)}.boss-part.hit-shake{animation:none}}
 .poison-tick{position:absolute;transform:translateX(-50%);color:#a6e597;font-size:13px;font-weight:900;text-shadow:0 1px 3px #000;white-space:nowrap;animation:poison-tick 1.1s ease-out forwards}
 @keyframes poison-tick{0%{opacity:0;margin-top:4px}15%{opacity:1}100%{opacity:0;margin-top:-14px}}
 @media (prefers-reduced-motion:reduce){.poison-tick{animation:poison-tick-still 1.1s linear forwards}@keyframes poison-tick-still{0%,80%{opacity:1}100%{opacity:0}}}
@@ -1748,8 +1765,15 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  // One short number per hit of a multi-hit card, around the struck part.
  window.showHitNumbers=(i,list)=>{
   const part=foeEl.querySelectorAll('.boss-part')[i];if(!part)return;const base=arena.getBoundingClientRect(),r=part.getBoundingClientRect();
+  // 0.12 s apart; spots on a 3x2 grid (kept inside the boss frame, below the pill row and above the name); the part shakes on each hit.
+  const fr=foeEl.getBoundingClientRect(),GAP=120,SPOTS=[[-54,-18],[0,-18],[54,-18],[-54,18],[0,18],[54,18]];
+  const cx=Math.max(fr.left-base.left+84,Math.min(fr.right-base.left-84,r.left-base.left+r.width/2)),cy=r.top-base.top+r.height*0.65;
+  const shake=()=>{const el=foeEl.querySelectorAll('.boss-part')[i];if(!el)return;el.classList.remove('hit-shake');void el.offsetWidth;el.classList.add('hit-shake');setTimeout(()=>el.classList.remove('hit-shake'),120);};
   list.forEach((n,k)=>setTimeout(()=>{const t=document.createElement('span');t.className='hit-pop';t.textContent='−'+n;
-   t.style.left=(r.left-base.left+r.width/2+((k%3)-1)*18)+'px';t.style.top=(r.top-base.top+r.height*0.45+(k%2)*10)+'px';layer.append(t);setTimeout(()=>t.remove(),650);},k*70));
+   const [dx,dy]=SPOTS[k%SPOTS.length];t.style.left=(cx+dx)+'px';t.style.top=(cy+dy-12)+'px';layer.append(t);shake();setTimeout(()=>t.remove(),650);},k*GAP));
+  // After the last hit: the total, as big as a normal attack number.
+  if(list.length)setTimeout(()=>{const t=document.createElement('span');t.className='hit-total';t.textContent=String(list.reduce((a,b)=>a+b,0));
+   t.style.left=cx+'px';t.style.top=(cy-16)+'px';layer.append(t);setTimeout(()=>t.remove(),750);},(list.length-1)*GAP+380);
  };
  // Poison damage at the end of the enemy phase: a short "−N" at that part.
  window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
@@ -1775,8 +1799,21 @@ body.hand-test #cards .card.hand-card:active{transform:none}
 .card.hand-card.hand-lifted{opacity:.18}
 .card.hand-card .name{align-self:stretch;min-height:21px;margin-top:0;padding-left:21px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.25}
 .card.hand-card.has-mark .name{padding-right:17px}
-.card.hand-card .effect{margin-top:5px;font-size:10px;line-height:1.3}
-.cards.hand6 .card.hand-card .name{padding-left:17px;min-height:17px;display:block;line-height:17px}
+.card.hand-card{padding:0;justify-content:flex-end;background:var(--hc-bg);border-color:var(--hc-line)}
+.card.hand-card.hand-m{--hc-bg:#33243a;--hc-line:#7a5a82;--hc-band:#251a2b}
+.card.hand-card.hand-r{--hc-bg:#232a40;--hc-line:#5a6690;--hc-band:#1a1f31}
+.card.hand-card.hand-k{--hc-bg:#1f2f21;--hc-line:#4f7450;--hc-band:#172318}
+.card.hand-card .hand-art{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:56% 12%;pointer-events:none;-webkit-user-drag:none}
+.card.hand-card .name{position:relative;z-index:1;align-self:stretch;min-height:0;margin:0;padding:14px 4px 6px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-align:center;font-size:13px;font-weight:900;line-height:1.25;color:#fff4ea;text-shadow:0 1px 2px #000,0 0 6px #000;background:linear-gradient(180deg,transparent 0,var(--hc-band) 13px);word-break:keep-all;overflow-wrap:anywhere}
+.card.hand-card.has-mark .name{padding-right:4px}
+.cards.hand6 .card.hand-card{padding:0;justify-content:flex-end}
+.cards.hand6 .card.hand-card .hand-art{object-position:56% 18%}
+.cards.hand6 .card.hand-card .name{padding:8px 3px 3px;font-size:11px;line-height:1.2;-webkit-line-clamp:1;display:block;white-space:nowrap;text-overflow:clip;background:linear-gradient(180deg,transparent 0,var(--hc-band) 8px)}
+#hand-zoom .hz-terms{margin:9px 0 0;padding:7px 0 0;border-top:1px solid #ffffff2e;white-space:normal}
+#hand-zoom .hz-terms div{margin:0 0 4px;font-size:11.5px;line-height:1.45;color:#d9cdd0}
+#hand-zoom .hz-terms dt{display:inline;font-weight:800;color:#efd2a6}
+#hand-zoom .hz-terms dt:after{content:'：'}
+#hand-zoom .hz-terms dd{display:inline;margin:0}
 .hand-hint{display:inline-block;padding:0 8px;border:1px solid #e9c98a99;border-radius:9px;background:#2d2519;color:#f3dfb8;font-size:10px;line-height:15px;white-space:nowrap}
 #hand-zoom{position:fixed;z-index:100;left:50%;transform:translateX(-50%);width:min(260px,calc(100vw - 32px));box-sizing:border-box;padding:12px 14px 13px;border:2px solid var(--zc,#b9979c);border-radius:10px;background:linear-gradient(160deg,#54404a 0%,#342b38 45%,#1d1d28 100%);color:#f5ede4;box-shadow:0 8px 30px #000c;pointer-events:none;display:none;white-space:pre-wrap;-webkit-user-select:none;user-select:none}
 #hand-zoom.show{display:block}
@@ -1806,7 +1843,8 @@ body.hand-test #cards .card.hand-card:active{transform:none}
   if(zoom.getBoundingClientRect().top<6){zoom.style.bottom='auto';zoom.style.top='6px';}
  }
  function showZoom(cost,name,body,reason,color){
-  zoom.innerHTML=`<div class="hz-head">${cost===null?'':`<span class="hz-cost">${cost}</span>`}<span class="hz-name">${esc(name)}</span></div><div class="hz-body">${esc(body)}</div>${reason?`<div class="hz-reason">${esc(reason)}</div>`:''}`;
+  const terms=cost===null?[]:handTermsFor(body);
+  zoom.innerHTML=`<div class="hz-head">${cost===null?'':`<span class="hz-cost">${cost}</span>`}<span class="hz-name">${esc(name)}</span></div><div class="hz-body">${esc(body)}</div>${terms.length?`<dl class="hz-terms">${terms.map(([w,d])=>`<div><dt>${esc(w)}</dt><dd>${esc(d)}</dd></div>`).join('')}</dl>`:''}${reason?`<div class="hz-reason">${esc(reason)}</div>`:''}`;
   zoom.style.setProperty('--zc',color||'#b9979c');zoom.classList.add('show');placeZoom();
  }
  function hideZoom(){zoom.classList.remove('show');}
