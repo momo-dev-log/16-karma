@@ -1051,7 +1051,9 @@ testToggleLabel();
 // Test-only game changes: stun lasts 1 turn, 禍's all-target attack becomes single-target, enemy damage x1.5 (rounded),
 // boss HP and break limits x10, card effects follow their descriptions (cards 5-8 added), shock blocks the leftmost card.
 const TEST_HAND=new URLSearchParams(location.search).get('test')==='hand';
-const HAND_FORMS={A:'4枚固定・1ターン1回',B:'持ち込み6枚・使った札は休む',C:'山札から4枚'};
+const HAND_FORMS={A:'4枚固定・1ターン1回',B:'持ち込み6枚・使った札は休む',C:'山札から4枚',D:'山札から引く・使わなかった札は残す'};
+// Short names for the row above the hand (D's full name does not fit next to the pile counts).
+const HAND_LABELS={...HAND_FORMS,D:'山札から引く・残す'};
 const HAND_ART={m:'斬',r:'銃',k:'毒'};
 var testHandForm=null,testHandState=null;
 function testHandActive(){return TEST_HAND;}
@@ -1079,8 +1081,11 @@ function testHandInit(){
 function testHandNewTurn(){
  if(!TEST_HAND)return;
  for(const id of ids){const st=testHandState[id];
+  const usedLast=st.used;
   st.rest=testHandForm==='B'?new Set(st.used):new Set();st.used=new Set();st.played=0;
   if(testHandForm==='C'){st.discard.push(...st.hand);st.hand=[];handDraw(st);}
+  // D: used cards go to the discard pile, unused cards stay; draw back up to 4.
+  if(testHandForm==='D'){st.discard.push(...st.hand.filter(c=>usedLast.has(c)));st.hand=st.hand.filter(c=>!usedLast.has(c));handDraw(st);}
  }
 }
 // Parts that attack this turn with a face forecast, and the allies they target.
@@ -1119,7 +1124,7 @@ function renderTestHand(c){
   const glow=can&&handBoosted(id,k);
   return `<button class="card${glow?' hand-glow':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" ${can?'':'disabled'}><span class="cost">${k.cost}</span><span class="art">${HAND_ART[id]}</span><span class="name">${k.name}</span>${six?'':`<span class="effect">${k.desc}</span>`}${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
  $('cards').querySelectorAll('button').forEach(b=>b.onclick=()=>testHandPlay(+b.dataset.i));
- $('handname').textContent=`形${testHandForm}：${HAND_FORMS[testHandForm]}`+(testHandForm==='C'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
+ $('handname').textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
 }
 function testHandPlay(idx){
  const id=active,c=chars[id],st=testHandState[id],cardId=st.hand[idx],card=CARDS[cardId];
