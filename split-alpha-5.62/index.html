@@ -1075,13 +1075,16 @@ function testHandRestPart(i){return TEST_HAND&&(i===0||i===2);}
 // Card text with guard and reduction numbers x3 (the test's own numbers).
 // Card text in the test: these cards have their own final numbers; the others get guard / reduction x3.
 const TEST_HAND_DESC={
- M1:'25×2Hit',M2:'20×2Hit。叩く部位が美桜を狙っていれば20×3Hit',M3:'20×2Hit。叩く部位が美桜以外の仲間を狙っていれば20×3Hit',
- M4:'35×1Hit、自分に盾45',M5:'35×3Hit',M6:'累計Hit0〜1なら15×3、2〜3なら20×3、4以上なら25×3Hit',
- M7:'30×3Hit。累計Hit3以上なら、さらに40×1Hit',M8:'25・35・45・55の4Hit。叩いた部位が、このターンに1人を狙う攻撃をするなら、その攻撃を120軽減',
- M9:'12×4Hit',M10:'10×2Hit、自分のHPを24払う（HP1は残る）',M11:'15×3Hit。HPが最大の半分以下なら15×5Hit',
- M12:'30×3Hit。累計Hit4以上なら30×5Hit',M13:'18×2Hit。倒れていない味方全員に盾45。累計Hit4以上なら盾90',M14:'18×5Hit。自分の盾が0なら18×6Hit',
- M15:'15×2Hit。自分のHPを36回復（最大HPまで）。累計Hit4以上なら72回復',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit',
- R6:'敵に65。叩いた部位が麗華を狙っていれば、その部位の攻撃を60軽減',R14:'敵に40。HPがいちばん低い味方に盾45',
+ M1:'25×2Hit。',M2:'20×2Hit。攻撃する部位への累計Hitが1以上なら20×3Hit。',
+ M3:'20×2Hit。攻撃する部位が美桜以外の仲間を狙っていれば20×3Hit。',M4:'35×1Hit。自分に盾45。',M5:'35×3Hit。',
+ M6:'攻撃する部位への累計Hitが0〜1なら15×3Hit、2〜3なら20×3Hit、4以上なら25×3Hit。',
+ M7:'30×3Hit。攻撃する部位への累計Hit3以上なら、さらに40×1Hit。',
+ M8:'25・35・45・55の4Hit。攻撃する部位がこのターンに単体攻撃をするなら、その攻撃を120軽減。',
+ M9:'12×4Hit。',M10:'10×2Hit。自分のHPを24払う（HPは最低1残る）。',M11:'15×3Hit。自分のHPが半分以下なら15×5Hit。',
+ M12:'30×3Hit。攻撃する部位への累計Hit4以上なら30×5Hit。',
+ M13:'18×2Hit。生存中の味方全員に盾45。攻撃する部位への累計Hit4以上なら盾90。',M14:'18×5Hit。自分の盾が0なら18×6Hit。',
+ M15:'15×2Hit。自分のHPを36回復（最大HPまで）。攻撃する部位への累計Hit4以上なら72回復。',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit。',
+ R6:'敵に65。攻撃した部位が麗華を狙っていれば、その部位の攻撃を60軽減',R14:'敵に40。HPがいちばん低い味方に盾45',
  K14:'敵に25、毒2。部位の毒が6以上なら、さらに毒2'
 };
 function handCardDesc(cid,desc){return TEST_HAND_DESC[cid]||testHandDesc(desc);}
@@ -1170,7 +1173,7 @@ function mioCardPlan(cardId,part){
  const c=chars.m,h=mioHits(part),r=(n,k)=>Array(k).fill(n);let hits=[],boosted=false;
  switch(cardId){
   case 'M1':hits=r(25,2);break;
-  case 'M2':boosted=handPartTargets(part,'m');hits=r(20,boosted?3:2);break;
+  case 'M2':boosted=h>=1;hits=r(20,boosted?3:2);break; // cumulative hits on that part before the card
   case 'M3':boosted=ids.some(x=>x!=='m'&&chars[x].hp>0&&handPartTargets(part,x));hits=r(20,boosted?3:2);break;
   case 'M4':hits=[35];break;
   case 'M5':hits=r(35,3);break;
@@ -1335,8 +1338,9 @@ var handDrag=null,handHintDone=false;
 // Add a row to explain another word.
 const HAND_TERMS=[
  ['Hit','1回の当たり。「20×2Hit」は、20のダメージを2回当てる。'],
- ['累計Hit','このターンに美桜がその部位に当てたHitの数。ターンの終わりに0に戻る。'],
- ['狙っていれば','叩く部位の、このターンの予告が、その相手を狙っていること。予兆の「?」は誰も狙っていない。全体攻撃は全員を狙っている。'],
+ ['累計Hit','このターンに美桜が同じ敵部位へ当てたHit数。部位ごとに計算する。カード使用前の累計で強化条件を判定し、使用後にそのカードのHit数を加算する。ターン終了時にリセット。'],
+ ['狙っていれば','攻撃する部位の、このターンの予告が、その相手を狙っていること。予兆の「?」は誰も狙っていない。全体攻撃は全員を狙っている。'],
+ ['単体攻撃','1人だけを狙う攻撃。'],
  ['盾','そのターンだけ効く守り。敵の攻撃は、先に盾で受け止めて、残りがHPから減る。ターンの始めに0に戻る。'],
  ['毒','部位ごとにたまり、敵の行動が終わるたびに、毒の数だけボスのHPが減る。減らずに残る。']
 ];
