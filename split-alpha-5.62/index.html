@@ -1091,7 +1091,7 @@ const TEST_HAND_DESC={
  K1:'30ダメージ。毒＋2',K2:'42ダメージ。毒＋1',K3:'35ダメージ。毒＋1。攻撃した部位の攻撃を24軽減',K4:'25ダメージ。毒＋1。自分に盾75',
  K5:'70ダメージ。毒＋3。付ける前の毒が4以上なら、さらに毒＋3',K6:'65ダメージ。毒＋2。自分に盾60',K7:'75ダメージ＋攻撃する部位の毒1つにつき16ダメージ',K8:'125ダメージ。毒＋5。付けた後の、その部位の毒ダメージを追加で1回発生させる',
  K9:'40ダメージ。毒＋2。付けた後の毒が4以上なら自分に盾75',K10:'14ダメージ。毒＋1',K11:'55ダメージ＋攻撃する部位の毒1つにつき8ダメージ',K12:'80ダメージ。毒＋4',
- K13:'50ダメージ。攻撃する部位の毒を半分使う（端数切り捨て）。使った毒1つにつき＋50ダメージ',K14:'25ダメージ。毒＋2。付けた後の毒が6以上なら、さらに毒＋2',K15:'95ダメージ。毒＋2。攻撃した部位の攻撃を45軽減',K16:'135ダメージ。攻撃する部位の毒が6以上なら205ダメージになり、その部位の毒ダメージを追加で2回発生させる。毒は使わない'
+ K13:'50ダメージ。攻撃する部位の毒を半分使う（端数切り捨て）。使った毒1つにつき＋30ダメージ',K14:'25ダメージ。毒＋2。付けた後の毒が6以上なら、さらに毒＋2',K15:'95ダメージ。毒＋2。攻撃した部位の攻撃を45軽減',K16:'135ダメージ。攻撃する部位の毒が6以上なら205ダメージになり、その部位の毒ダメージを追加で2回発生させる。毒は使わない'
 };
 // Card names in the hand test (the integrated spec). Applied to CARDS only when ?test=hand is on.
 const TEST_HAND_NAME={M1:'不機嫌な刃',M2:'逆上',M3:'手出し厳禁',M4:'反骨',M5:'無邪気な凶行',M6:'怒涛の追撃',M7:'お返し',M8:'笑顔の消える時',
@@ -1100,9 +1100,11 @@ const TEST_HAND_NAME={M1:'不機嫌な刃',M2:'逆上',M3:'手出し厳禁',M4:'
  R9:'見下ろす眼差し',R10:'冷笑',R11:'華麗なる一撃',R12:'不可侵の玉座',R13:'絶対者の裁定',R14:'下がりなさい',R15:'君臨',R16:'私に逆らうつもり？',
  K1:'嫉妬の毒針',K2:'花の囁き',K3:'秘密にしてね',K4:'茨の盾',K5:'枯れちゃえば？',K6:'花影の毒霧',K7:'妬みの棘',K8:'黒百合',
  K9:'翠の余韻',K10:'つかまえた',K11:'羨望の眼差し',K12:'毒花の標本',K13:'散華',K14:'鈍色の花冠',K15:'密やかな悪意',K16:'花葬'};
-// Poison in the hand test: 4 damage per stack; a part with 10 or more becomes plague (8 per stack) and stays plague.
+// Poison in the hand test: 3 damage per stack; a part with 10 or more becomes plague (6 per stack) and stays plague.
 function handIsPlague(f){if(TEST_HAND&&(f.poison||0)>=10)f.plague=true;return !!(TEST_HAND&&f.plague);}
-function testPoisonDamage(f){if(!TEST_HAND)return f.poison;return (f.poison||0)*(handIsPlague(f)?8:4);}
+const TEST_POISON_PER={poison:3,plague:6}; // damage per stack in the hand test (poison / plague)
+function testPoisonPer(plague){return plague?TEST_POISON_PER.plague:TEST_POISON_PER.poison;}
+function testPoisonDamage(f){if(!TEST_HAND)return f.poison;return (f.poison||0)*testPoisonPer(handIsPlague(f));}
 function handCardDesc(cid,desc){return TEST_HAND_DESC[cid]||testHandDesc(desc);}
 function testHandDesc(desc){return desc.replace(/盾(\d+)/g,(m,n)=>'盾'+n*TEST_ALLY_SCALE).replace(/(\d+)軽減/g,(m,n)=>n*TEST_ALLY_SCALE+'軽減');}
 // A hit that carried an ailment but was fully blocked by guard: no HP lost, so no ailment.
@@ -1190,10 +1192,10 @@ function mioHits(part){return testHandState.m.hits[part]||0;}
 // Chainsaw number display: each real hit's damage is shown split into this many small numbers (display only, no extra damage).
 const MIO_SAW_SPLIT={M1:3,M2:3,M3:3,M4:3,M5:3,M6:3,M7:3,M8:3,M9:2,M10:2,M11:3,M12:3,M13:2,M14:3,M15:2,M16:2};
 // Timing and placement of the small numbers (tunable). gap: ms between numbers, from gapMax (few numbers) down to gapMin (many),
-// all numbers appearing within spanMs; lifeMs: how long one number stays. Places: a grid of cols x rows (px from the struck part's
-// centre); places that would cover the part marker (✦), the mark row, the boss name or leave the boss frame are skipped, and the
-// `use` nearest ones are visited in a scattered order.
-const MIO_SAW_FX={gapMax:80,gapMin:40,spanMs:800,lifeMs:300,totalDelayMs:220,cols:[-180,-140,-100,-60,-20,20,60,100,140,180],rows:[-20,0,20],use:12,centerY:0.6};
+// all numbers appearing within spanMs; lifeMs: how long one number stays. Places: as many columns and rows of number-sized boxes
+// (colGap / rowGap px apart) as fit inside the struck part, below its mark row and above the boss name; the ✦ is not avoided
+// (as with Reika's and Koharu's numbers). The places are visited in a scattered order.
+const MIO_SAW_FX={gapMax:80,gapMin:40,spanMs:800,lifeMs:300,totalDelayMs:220,colGap:1,rowGap:1};
 // Split a damage into k whole numbers that add up to it (larger parts first): 26 into 3 -> 9, 9, 8.
 function mioSawParts(n,k){k=Math.max(1,Math.min(k,n));const b=Math.floor(n/k),r=n-b*k;return Array.from({length:k},(_,i)=>b+(i<r?1:0));}
 function mioCardPlan(cardId,part){
@@ -1226,7 +1228,7 @@ function handCardDamage(id,card,foe){
  if(card.id==='K16'&&(foe.poison||0)>=6)d=205;
  if(card.id==='R4'&&c.guard>=60)d=160;
  if(card.id==='R11'&&c.guard>=90)d=80;
- if(card.id==='K13')d+=50*Math.floor((foe.poison||0)/2);
+ if(card.id==='K13')d+=30*Math.floor((foe.poison||0)/2);
  return d;
 }
 // How many extra poison damages a card makes right after its hit (K8: once; K16 with 6+ poison on the part: twice).
@@ -1401,8 +1403,8 @@ const HAND_TERMS=[
  ['狙っていれば','攻撃する部位の、このターンの予告が、その相手を狙っていること。予兆の「?」は誰も狙っていない。全体攻撃は全員を狙っている。'],
  ['単体攻撃','1人だけを狙う攻撃。'],
  ['盾','そのターンだけ効く守り。敵の攻撃は、先に盾で受け止めて、残りがHPから減る。ターンの始めに0に戻る。'],
- ['毒','部位ごとにたまり、敵の行動が終わるたびに、部位ごとに毒1つにつき4ダメージ、ボスのHPが減る。減らずに残る。10以上たまると疫毒に変わる。'],
- ['疫毒','毒が10以上たまった部位は疫毒に変わり、1つにつき8ダメージになる。毒を使って10未満になっても疫毒のまま。あとから付けた毒も疫毒として数える。']
+ ['毒','部位ごとにたまり、敵の行動が終わるたびに、部位ごとに毒1つにつき3ダメージ、ボスのHPが減る。減らずに残る。10以上たまると疫毒に変わる。'],
+ ['疫毒','毒が10以上たまった部位は疫毒に変わり、1つにつき6ダメージになる。毒を使って10未満になっても疫毒のまま。あとから付けた毒も疫毒として数える。']
 ];
 // A word inside a longer listed word (Hit inside 累計Hit) does not count by itself.
 function handTermsFor(text){
@@ -1452,7 +1454,7 @@ function handPreview(id,idx,part){
  const got=hit(modifiedDamage(damage,c,foe))||0;
  // K8 / K16: the extra poison damage right after the hit, with the poison as it will be after the card.
  const bursts=handPoisonBursts(card,foe);let extra=[];
- if(bursts){const p=(foe.poison||0)+(card.id==='K8'?5:0),plague=foe.plague||p>=10,per=p*(plague?8:4);for(let k=0;k<bursts&&hp>0;k++){const l=Math.min(hp,per);hp-=l;extra.push(l);}}
+ if(bursts){const p=(foe.poison||0)+(card.id==='K8'?5:0),plague=foe.plague||p>=10,per=p*testPoisonPer(plague);for(let k=0;k<bursts&&hp>0;k++){const l=Math.min(hp,per);hp-=l;extra.push(l);}}
  const total=got+extra.reduce((a,b)=>a+b,0);
  return {total,label:`${got}ダメージ`+(extra.length?`＋毒${extra.length>1&&extra[0]===extra[1]?extra[0]+'×'+extra.length:extra.join('＋')}`:'')};
 }
@@ -1814,9 +1816,11 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 .poison-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .poison-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap;transform:translateX(-50%)}
 .hit-pop{position:absolute;transform:translateX(-50%);line-height:1;color:#ffe3da;font-size:17px;font-weight:900;text-shadow:0 1px 2px #000,0 0 5px #000,0 0 2px #000;white-space:nowrap;animation:hit-pop .3s ease-out forwards}
-@keyframes hit-pop{0%{opacity:0;margin-top:2px}15%{opacity:1}70%{opacity:1}100%{opacity:0;margin-top:-2px}}
+@keyframes hit-pop{0%{opacity:0}15%{opacity:1}70%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.hit-pop{animation:none}}
-.hit-total{position:absolute;color:#fff1cf;font-size:29px;font-weight:900;text-shadow:0 2px 2px #1a0d11,0 0 10px #e6ad76;white-space:nowrap;animation:attackNumber .7s ease-out forwards}
+.hit-total{position:absolute;color:#fff1cf;font-size:29px;font-weight:900;line-height:1;text-shadow:0 2px 2px #1a0d11,0 0 10px #e6ad76;white-space:nowrap;animation:saw-total .75s ease-out forwards}
+/* Mio's total: a short float so it stays inside the struck part (between its mark row and the boss name). */
+@keyframes saw-total{0%{opacity:0;transform:translate(-50%,4px) scale(.8)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}75%{opacity:1;transform:translate(-50%,-6px) scale(1)}100%{opacity:0;transform:translate(-50%,-10px) scale(1)}}
 @keyframes hit-shake{0%,100%{translate:0 0}30%{translate:-3px 0}70%{translate:3px 0}}
 .boss-part.hit-shake{animation:hit-shake .1s linear}
 @media (prefers-reduced-motion:reduce){.hit-total{animation:none;transform:translateX(-50%)}.boss-part.hit-shake{animation:none}}
@@ -1877,26 +1881,29 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
   const part=foeEl.querySelectorAll('.boss-part')[i];if(!part||!list.length)return;const base=arena.getBoundingClientRect(),r=part.getBoundingClientRect();
   const fx=typeof MIO_SAW_FX!=='undefined'?MIO_SAW_FX:{gapMax:80,gapMin:40,spanMs:800,lifeMs:300,totalDelayMs:220};
   const fr=foeEl.getBoundingClientRect(),cx=r.left-base.left+r.width/2,cy=r.top-base.top+r.height*(fx.centerY||0.6);
-  // Free places for the numbers (arena coordinates), measured with a sample number.
+  // Free places for the numbers (arena coordinates), measured with a sample number ("−88").
   const probe=document.createElement('span');probe.className='hit-pop';probe.style.animation='none';probe.style.visibility='hidden';probe.textContent='−88';document.body.append(probe); // measured outside the number layer
-  const pw=probe.offsetWidth+4,ph=probe.offsetHeight+2;probe.remove();
-  const rel=e=>{const q=e.getBoundingClientRect();return {l:q.left-base.left-3,t:q.top-base.top-3,r:q.right-base.left+3,b:q.bottom-base.top+3};};
-  const avoid=[...foeEl.querySelectorAll('.boss-point-icon.is-selected,.boss-hp-name'),...layer.querySelectorAll('.mark-row')].filter(e=>e.offsetWidth).map(rel);
-  const inF={l:fr.left-base.left+2,t:fr.top-base.top+2,r:fr.right-base.left-2,b:fr.bottom-base.top-2};
-  let places=[];(fx.cols||[0]).forEach(dx=>(fx.rows||[0]).forEach(dy=>{const x=cx+dx,y=cy+dy,bx={l:x-pw/2,t:y-8,r:x+pw/2,b:y-8+ph};
-   if(bx.l<inF.l||bx.r>inF.r||bx.t<inF.t||bx.b>inF.b)return;if(avoid.some(a=>bx.l<a.r&&a.l<bx.r&&bx.t<a.b&&a.t<bx.b))return;places.push({x,y,d:Math.hypot(dx,dy*2)});}));
-  places.sort((p,q)=>p.d-q.d);places=places.slice(0,fx.use||12);if(!places.length)places=[{x:cx,y:cy}];
+  const pw=probe.offsetWidth,ph=probe.offsetHeight;probe.remove();
+  const pl={l:r.left-base.left,r:r.right-base.left,t:r.top-base.top,b:r.bottom-base.top};
+  // Keep clear of this part's mark row and of the boss name.
+  layer.querySelectorAll(`.mark-row[data-part="${i}"]`).forEach(e=>{const q=e.getBoundingClientRect();pl.t=Math.max(pl.t,q.bottom-base.top+1);});
+  const nameEl=foeEl.querySelector('.boss-hp-name');if(nameEl&&nameEl.offsetWidth){const q=nameEl.getBoundingClientRect();if(q.top-base.top>pl.t)pl.b=Math.min(pl.b,q.top-base.top-1);}
+  pl.l=Math.max(pl.l,fr.left-base.left);pl.r=Math.min(pl.r,fr.right-base.left);
+  const cg=fx.colGap??1,rg=fx.rowGap??1,nc=Math.max(1,Math.floor((pl.r-pl.l+cg)/(pw+cg))),nr=Math.max(1,Math.floor((pl.b-pl.t+rg)/(ph+rg)));
+  const gx=(pl.l+pl.r)/2-((nc-1)*(pw+cg))/2,gy=(pl.t+pl.b)/2-((nr-1)*(ph+rg))/2;
+  let places=[];for(let y=0;y<nr;y++)for(let x=0;x<nc;x++)places.push({x:gx+x*(pw+cg),y:gy+y*(ph+rg)-ph/2+8});
+  const mid={x:(pl.l+pl.r)/2,y:(pl.t+pl.b)/2};
   // Scatter: walk the places with a stride that is coprime to their count, so neighbours in time are apart in space.
-  const n=places.length,stride=[5,7,3,1].find(k=>k<n&&n%k!==0&&(n<2||k!==n))||1,order=Array.from({length:n},(_,k)=>places[(k*stride)%n]);
+  const n=places.length,stride=[5,7,3,1].find(k=>k<n&&n%k!==0)||1,order=Array.from({length:n},(_,k)=>places[(k*stride)%n]);
   const pieces=[];list.forEach((n,h)=>(typeof mioSawParts==='function'?mioSawParts(n,split):[n]).forEach((v,k)=>pieces.push({v,first:k===0})));
   const gap=pieces.length>1?Math.max(fx.gapMin,Math.min(fx.gapMax,Math.floor(fx.spanMs/(pieces.length-1)))):0;
   const shake=()=>{const el=foeEl.querySelectorAll('.boss-part')[i];if(!el)return;el.classList.remove('hit-shake');void el.offsetWidth;el.classList.add('hit-shake');setTimeout(()=>el.classList.remove('hit-shake'),120);};
   const later=(fn,ms)=>sawTimers.push(setTimeout(fn,ms));
   pieces.forEach((pc,k)=>later(()=>{const t=document.createElement('span');t.className='hit-pop';t.textContent='−'+pc.v;
-   const pl=order[k%order.length];t.style.left=pl.x+'px';t.style.top=(pl.y-8)+'px';t.style.animationDuration=fx.lifeMs+'ms';layer.append(t);if(pc.first)shake();setTimeout(()=>t.remove(),fx.lifeMs+30);},k*gap));
+   const pl=order[k%order.length];t.style.left=pl.x+'px';t.style.top=(pl.y-8)+'px';t.style.animationDuration=fx.lifeMs+'ms';layer.append(t);if(pc.first)shake();setTimeout(()=>t.remove(),fx.lifeMs);},k*gap));
   // After the last number: the total, as big as a normal attack number.
   later(()=>{const t=document.createElement('span');t.className='hit-total';t.textContent=String(list.reduce((a,b)=>a+b,0));
-   const tx=Math.max(inF.l+40,Math.min(inF.r-40,places[0].x));t.style.left=tx+'px';t.style.top=(places[0].y-16)+'px';layer.append(t);setTimeout(()=>t.remove(),750);},(pieces.length-1)*gap+fx.totalDelayMs);
+   t.style.left=mid.x+'px';t.style.top=(mid.y-14)+'px';layer.append(t);setTimeout(()=>t.remove(),750);},(pieces.length-1)*gap+fx.totalDelayMs);
  };
  // Poison damage at the end of the enemy phase: a short "−N" at that part.
  window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
