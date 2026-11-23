@@ -1314,12 +1314,23 @@ function renderTestHand(c){
   const glow=can&&handBoosted(id,k);
   // Tap only reads the card (see the drag script); a card is used by dragging it onto a boss part.
   const lifted=handDrag&&handDrag.kind==='card'&&handDrag.dragging&&handDrag.idx===i;
-  return `<button type="button" class="card hand-card hand-${id}${glow?' hand-glow':''}${can?'':' hand-off'}${mark?' has-mark':''}${lifted?' hand-lifted':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" aria-disabled="${!can}"><span class="cost">${k.cost}</span><img class="hand-art" src="${HAND_CARD_ART[cid]||PORTRAITS[id]}" alt="" draggable="false" style="${handArtStyle(cid,id)}"><span class="name">${k.name}</span>${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
+  return `<button type="button" class="card hand-card hand-${id}${glow?' hand-glow':''}${can?'':' hand-off'}${mark?' has-mark':''}${lifted?' hand-lifted':''}" data-i="${i}" style="${glow?`--hand-glow:${FACE_BORDER[id]}`:''}" aria-disabled="${!can}"><span class="cost">${k.cost}</span><img class="hand-art" src="${HAND_CARD_ART[cid]||PORTRAITS[id]}" alt="" draggable="false" style="${handArtStyle(cid,id)}"><span class="hand-face"><span class="name">${k.name}</span>${handFaceHtml(cid,six)}</span>${mark?`<span class="hand-mark">${mark}</span>`:''}</button>`;}).join('');
  const hn=$('handname');
  if(!handHintDone){hn.innerHTML='<span class="hand-hint">札を敵へ引っぱって使う</span>';}
  else hn.textContent=`形${testHandForm}：${HAND_LABELS[testHandForm]}`+(testHandForm==='C'||testHandForm==='D'?`｜山札${st.deck.length}・捨て札${st.discard.length}`:'');
 }
 // Picture on each card face (card id -> image). For now every card points to its owner's face picture (temporary).
+// Card face text in the hand test: [big number, short effect]. '—' = no effect line. Edit here to change the face text.
+const HAND_FACE={
+ M1:['25×2','—'],M2:['20×2','累計1以上で×3'],M3:['20×2','仲間狙いなら×3'],M4:['35×1','盾45'],M5:['35×3','—'],M6:['15×3','累計2で20・4で25'],M7:['30×3','累計3以上で＋40'],M8:['160','単体攻撃を−120'],
+ M9:['12×4','—'],M10:['10×2','HP24を払う'],M11:['15×3','HP半分以下で×5'],M12:['30×3','累計4以上で×5'],M13:['18×2','全員盾45（累計4で90）'],M14:['18×5','盾0なら×6'],M15:['15×2','HP+36（累計4以上で72）'],M16:['30×6','ボスHP35%以下で×8'],
+ R1:['50','—'],R2:['35','盾60'],R3:['40','攻撃−30'],R4:['110','—'],R5:['85','盾90'],R6:['65','麗華狙いなら攻撃−60'],R7:['100','部位を壊したら盾90'],R8:['140','盾90'],
+ R9:['30','盾105'],R10:['20','攻撃−36'],R11:['45','盾90以上で＋35'],R12:['55','盾240'],R13:['100','全体攻撃なら−60'],R14:['40','HPが一番低い味方に盾45'],R15:['95','最初に動いたら盾120'],R16:['155','攻撃−75'],
+ K1:['30','毒+2'],K2:['42','毒+1'],K3:['35','毒+1・攻撃−24'],K4:['25','毒+1・盾75'],K5:['70','毒+3'],K6:['65','毒+2・盾60'],K7:['75','毒1つで+8'],K8:['125','毒+4'],
+ K9:['40','毒+2（毒4以上で盾75）'],K10:['14','毒+1'],K11:['55','毒1つで+8'],K12:['80','毒+4'],K13:['50','毒を半分使い、1つで+8'],K14:['25','毒+2（6以上で+2）'],K15:['95','毒+2・攻撃−45'],K16:['135','毒6以上で＋70'],
+};
+function handFaceHtml(cid,six){const f=HAND_FACE[cid];if(!f)return '';
+ return `<span class="hand-big">${f[0]}</span>`+(six||f[1]==='—'?'':`<span class="hand-eff">${f[1]}</span>`);}
 // How the picture sits on the card: x / y = object-position (%), y6 = y for the small cards of form B, scale = zoom
 // (grows from the top centre). A row for a card id (e.g. R3) wins over the row for its character.
 const HAND_ART_FIT={
@@ -1816,11 +1827,19 @@ body.hand-test #cards .card.hand-card:active{transform:none}
 .card.hand-card.hand-r{--hc-bg:#232a40;--hc-line:#5a6690;--hc-band:#1a1f31}
 .card.hand-card.hand-k{--hc-bg:#1f2f21;--hc-line:#4f7450;--hc-band:#172318}
 .card.hand-card .hand-art{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;object-position:var(--art-x,56%) var(--art-y,12%);transform:scale(var(--art-s,1));transform-origin:50% 0;pointer-events:none;-webkit-user-drag:none}
-.card.hand-card .name{position:relative;z-index:1;align-self:stretch;min-height:0;margin:0;padding:14px 4px 6px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-align:center;font-size:13px;font-weight:900;line-height:1.25;color:#fff4ea;text-shadow:0 1px 2px #000,0 0 6px #000;background:linear-gradient(180deg,transparent 0,var(--hc-band) 13px);word-break:keep-all;overflow-wrap:anywhere}
-.card.hand-card.has-mark .name{padding-right:4px}
 .cards.hand6 .card.hand-card{padding:0;justify-content:flex-end}
 .cards.hand6 .card.hand-card .hand-art{object-position:var(--art-x,56%) var(--art-y6,18%)}
-.cards.hand6 .card.hand-card .name{padding:8px 3px 3px;font-size:11px;line-height:1.2;-webkit-line-clamp:1;display:block;white-space:nowrap;text-overflow:clip;background:linear-gradient(180deg,transparent 0,var(--hc-band) 8px)}
+/* Picture across the whole card, a dark veil of the character's colour (darker towards the bottom), text on top. */
+.card.hand-card.hand-m{--hc-rgb:51,36,58}.card.hand-card.hand-r{--hc-rgb:35,42,64}.card.hand-card.hand-k{--hc-rgb:31,47,33}
+.card.hand-card:before{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(var(--hc-rgb),.15) 0%,rgba(var(--hc-rgb),.45) 30%,rgba(var(--hc-rgb),.82) 58%,rgba(var(--hc-rgb),.92) 100%)}
+.card.hand-card .hand-face{position:relative;z-index:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;gap:0;padding:0 3px 3px;color:#fff4ea;text-shadow:0 1px 2px #000,0 0 5px #000;text-align:center}
+.card.hand-card .name{position:static;align-self:stretch;min-height:0;margin:0;padding:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:12px;font-weight:900;line-height:1.2;color:#fff4ea;background:none;word-break:keep-all;overflow-wrap:anywhere}
+.card.hand-card .hand-big{font-size:16px;font-weight:900;line-height:1.15;color:#ffe7bd;white-space:nowrap}
+.card.hand-card .hand-eff{align-self:stretch;font-size:10.5px;font-weight:700;line-height:1.25;color:#f5ede4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+.cards.hand6 .card.hand-card .hand-face{padding:0 3px 1px}
+.cards.hand6 .card.hand-card .name{line-height:1.1}
+.cards.hand6 .card.hand-card .name{font-size:11px;-webkit-line-clamp:1;display:block;white-space:nowrap;text-overflow:clip;min-width:0}
+.cards.hand6 .card.hand-card .hand-big{font-size:14px;line-height:1.1}
 #hand-zoom .hz-terms{margin:9px 0 0;padding:7px 0 0;border-top:1px solid #ffffff2e;white-space:normal}
 #hand-zoom .hz-terms div{margin:0 0 4px;font-size:11.5px;line-height:1.45;color:#d9cdd0}
 #hand-zoom .hz-terms dt{display:inline;font-weight:800;color:#efd2a6}
