@@ -1346,6 +1346,13 @@ const HAND_CARD_ART={
  K1:PORTRAITS.k,K2:PORTRAITS.k,K3:PORTRAITS.k,K4:PORTRAITS.k,K5:PORTRAITS.k,K6:PORTRAITS.k,K7:PORTRAITS.k,K8:PORTRAITS.k,K9:PORTRAITS.k,K10:PORTRAITS.k,K11:PORTRAITS.k,K12:PORTRAITS.k,K13:PORTRAITS.k,K14:PORTRAITS.k,K15:PORTRAITS.k,K16:PORTRAITS.k,
 };
 var handDrag=null,handHintDone=false;
+// Marks on each boss part's row in the hand test, in this order: ailments on the enemy -> marks from allies -> Mio's hits.
+// Add a row here to show another mark. text() returns '' when there is nothing to show.
+const PART_MARKS=[
+ {group:'ailment',cls:'mark-poison',text:(f,i)=>f.poison>0?'☠'+f.poison:''},
+ // {group:'ally',cls:'mark-ally',text:(f,i)=>''}, // marks put on a part by allies (none yet)
+ {group:'mio',cls:'mark-hits',text:(f,i)=>{const h=testHandState&&testHandState.m&&testHandState.m.hits?testHandState.m.hits[i]:0;return h>0?'⚔'+h:'';}}
+];
 // Words explained under the full text of a held card (shown only when the word appears in that text, in this order).
 // Add a row to explain another word.
 const HAND_TERMS=[
@@ -1525,15 +1532,28 @@ window.addEventListener('resize',drawLines);window.addEventListener('hashchange'
    if(!(totals[id]>0)||!(chars[id]?.hp>0))return [];
    const r=card.getBoundingClientRect(),badge=document.createElement('span');
    badge.className='incoming-badge';badge.textContent='被弾 '+totals[id];
+   if(typeof TEST_HAND!=='undefined'&&TEST_HAND&&chars[id].guard>0){const a=testHandActualLoss(id);badge.textContent=`被弾 ${totals[id]} → ${a}`;if(a===0)badge.classList.add('incoming-blocked');}
    // 18px tall: 10px above the card's top edge, 8px over the photo; right edge 3px inside the card.
    badge.style.top=(r.top-base.top-10-6)+'px';badge.style.right=(base.right-r.right+3)+'px';
    return [badge];
   }));
  }
  // Forecast panels are redrawn by replacing #links children; ally cards by replacing #allies children.
- new MutationObserver(updateIncoming).observe(links,{childList:true});
- new MutationObserver(updateIncoming).observe(allies,{childList:true});
- updateIncoming();
+ // Hand test: what the enemy phase would really take from each ally (same rule as the enemy phase), and the total.
+ window.testHandActualLoss=id=>{
+  const c=chars[id];if(!(c.hp>0))return 0;let n=0;
+  foes.forEach((f,i)=>{if(!(f.hp>0&&!f.stunned&&f.wait<=1&&!statusPower(f,'stun')))return;if(!attackTargets(f,i).includes(id))return;
+   n+=modifiedDamage(Math.max(0,(f.plan?f.plan.damage:f.damage)-(f.weak||0)),f,c);});
+  if(typeof testNoDamage!=='undefined'&&testNoDamage)return 0;
+  return Math.min(c.hp,n-Math.min(c.guard,n));
+ };
+ const updateTotal=()=>{if(!(typeof TEST_HAND!=='undefined'&&TEST_HAND))return;const end=document.getElementById('end');if(!end)return;
+  let t=end.querySelector('.incoming-total');if(!t){t=document.createElement('span');t.className='incoming-total';end.append(t);}
+  t.textContent='受ける合計 '+ids.reduce((a,id)=>a+testHandActualLoss(id),0);};
+ const updateAll=()=>{updateIncoming();updateTotal();};
+ new MutationObserver(updateAll).observe(links,{childList:true});
+ new MutationObserver(updateAll).observe(allies,{childList:true});
+ updateAll();
 })();
 </script><style>
 /* α5.11: floating equipment descriptions and native long-press suppression */
@@ -1585,7 +1605,7 @@ function display(id){
 document.addEventListener('pointerdown',e=>{
  const el=e.target.closest?.('.equipment-tile');
  if(!el||!ids.has(el.id))return;
- if(el.id==='weaponinspect'&&typeof TEST_HAND!=='undefined'&&TEST_HAND)return; // the hand test has its own hold/drag
+ if(typeof TEST_HAND!=='undefined'&&TEST_HAND)return; // the hand test has its own hold (weapon picture and relics)
  if(held)return;clear();held=el.id;activePointer=e.pointerId;startX=e.clientX;startY=e.clientY;
  display(held);
  try{el.setPointerCapture(e.pointerId)}catch(_){}
@@ -1770,7 +1790,23 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  }
  // ☠N (poison) and, in the hand test, ⚔N (Mio's hits on that part this turn) share one small pill per part.
  // The pill is kept left of 呪's marker (middle column) and inside the boss frame.
+ // Hand test: one row of marks per part, same height and left offset in all three columns; overflow becomes "+N".
+ function updateMarks(){
+  layer.querySelectorAll('.mark-row').forEach(e=>e.remove());
+  const base=arena.getBoundingClientRect();
+  foes.forEach((f,i)=>{
+   const part=foeEl.querySelectorAll('.boss-part')[i];if(!part)return;const r=part.getBoundingClientRect();
+   const items=PART_MARKS.map(m=>({cls:m.cls,text:m.text(f,i)})).filter(m=>m.text);if(!items.length)return;
+   const row=document.createElement('span');row.className='mark-row';row.dataset.part=String(i);
+   row.style.left=(r.left-base.left+4)+'px';row.style.top=(r.top-base.top+3)+'px';row.style.maxWidth=(r.width-8)+'px';layer.append(row);
+   const chip=(cls,text)=>{const c=document.createElement('span');c.className='mark-chip '+cls;c.textContent=text;row.append(c);return c;};
+   const max=r.width-8;
+   // Show the first k marks (and "+rest" when some are left out), taking the largest k that fits.
+   for(let k=items.length;k>=1;k--){row.replaceChildren();items.slice(0,k).forEach(m=>chip(m.cls,m.text));if(k<items.length)chip('mark-more','+'+(items.length-k));if(row.scrollWidth<=max)break;}
+  });
+ }
  function update(){
+  if(typeof TEST_HAND!=='undefined'&&TEST_HAND){updateMarks();return;}
   layer.querySelectorAll('.poison-badge').forEach(e=>e.remove());
   const base=arena.getBoundingClientRect(),frame=foeEl.getBoundingClientRect();
   foes.forEach((f,i)=>{
@@ -1802,7 +1838,9 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
  // Poison damage at the end of the enemy phase: a short "−N" at that part.
  window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
   const pill=[...layer.querySelectorAll('.poison-badge')].find(b=>Math.abs(+b.dataset.center-s.x)<60);
-  t.style.left=(pill?+pill.dataset.center:s.x)+'px';t.style.top=(s.y+20)+'px';layer.append(t);setTimeout(()=>t.remove(),1200);};
+  t.style.left=(pill?+pill.dataset.center:s.x)+'px';t.style.top=(s.y+20)+'px';
+  const chip=layer.querySelector(`.mark-row[data-part="${i}"] .mark-poison`); // hand test: under the ☠ mark
+  if(chip){const a=arena.getBoundingClientRect(),c=chip.getBoundingClientRect();t.style.left=(c.left-a.left+c.width/2)+'px';t.style.top=(c.bottom-a.top+2)+'px';}layer.append(t);setTimeout(()=>t.remove(),1200);};
  new MutationObserver(update).observe(foeEl,{childList:true});
  window.addEventListener('resize',update);
  update();
@@ -1839,6 +1877,19 @@ body.hand-test #cards .card.hand-card:active{transform:none}
 #hand-zoom .hz-terms dt:after{content:'：'}
 #hand-zoom .hz-terms dd{display:inline;margin:0}
 .hand-hint{display:inline-block;padding:0 8px;border:1px solid #e9c98a99;border-radius:9px;background:#2d2519;color:#f3dfb8;font-size:10px;line-height:15px;white-space:nowrap}
+body.hand-test #forecast-hold,body.hand-test #forecast-summary{display:none!important}
+body.hand-test .compact-relic{gap:2px!important}
+body.hand-test .compact-relic .relic-tile{flex:0 0 34px!important;width:34px!important;max-width:34px!important;padding:2px!important}
+body.hand-test .compact-relic .relic-tile .equip-art{width:28px!important;height:28px!important}
+.compact-relic .relic-tile.relic-empty{border:1px dashed #8a7f8c!important;background:transparent!important;box-shadow:none!important}
+.relic-empty-text{font-size:10px;color:#a99fab;letter-spacing:0}
+.mark-row{position:absolute;display:flex;gap:3px;white-space:nowrap;overflow:hidden;pointer-events:none}
+.mark-chip{flex:none;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px}
+.mark-chip.mark-hits{border-color:#b99a62;background:#1e1912d9;color:#f3dfb8}
+.mark-chip.mark-more{border-color:#8a7f8c;background:#18161cd9;color:#d9cdd0}
+.incoming-badge.incoming-blocked{border-color:#6f8fb8;background:#16202cf2;color:#d7e6ff}
+#end .incoming-total{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;letter-spacing:0;color:#e9d6ad;pointer-events:none}
+body.hand-test #end{position:relative}
 #hand-zoom{position:fixed;z-index:100;left:50%;transform:translateX(-50%);width:min(260px,calc(100vw - 32px));box-sizing:border-box;padding:12px 14px 13px;border:2px solid var(--zc,#b9979c);border-radius:10px;background:linear-gradient(160deg,#54404a 0%,#342b38 45%,#1d1d28 100%);color:#f5ede4;box-shadow:0 8px 30px #000c;pointer-events:none;display:none;white-space:pre-wrap;-webkit-user-select:none;user-select:none}
 #hand-zoom.show{display:block}
 #hand-zoom .hz-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
@@ -1857,6 +1908,8 @@ body.hand-test #cards .card.hand-card:active{transform:none}
 (()=>{
  if(typeof TEST_HAND==='undefined'||!TEST_HAND)return;
  document.body.classList.add('hand-test');
+ // Three relic slots (one person carries three); the third is empty for now.
+ {const row=document.querySelector('.compact-relic');if(row&&!document.getElementById('relicinspect3')){const b=document.createElement('button');b.type='button';b.className='equipment-tile relic-tile relic-empty';b.id='relicinspect3';b.setAttribute('aria-label','遺物3（空き）');b.innerHTML='<span class="relic-empty-text">空き</span>';row.append(b);}}
  const DRAG_PX=10,LIFT_PX=14;
  const zoom=document.createElement('div');zoom.id='hand-zoom';zoom.setAttribute('role','status');document.body.append(zoom);
  const label=document.createElement('div');label.id='hand-drop-label';document.body.append(label);
@@ -1890,7 +1943,7 @@ body.hand-test #cards .card.hand-card:active{transform:none}
   const r=document.querySelectorAll('#foe .foe-unit')[part].getBoundingClientRect(),w=label.getBoundingClientRect().width;
   label.style.left=Math.max(6+w/2,Math.min(innerWidth-6-w/2,r.left+r.width/2))+'px';label.style.top=(r.top+4)+'px';
  }
- function source(){const d=handDrag;return d.kind==='card'?document.querySelector(`#cards .card[data-i="${d.idx}"]`):document.getElementById('weaponinspect');}
+ function source(){const d=handDrag;return d.kind==='card'?document.querySelector(`#cards .card[data-i="${d.idx}"]`):d.kind==='weapon'?document.getElementById('weaponinspect'):null;}
  function startDrag(){
   const d=handDrag,src=source();if(!src)return false;
   hideZoom();d.dragging=true;
@@ -1919,11 +1972,18 @@ body.hand-test #cards .card.hand-card:active{transform:none}
   }
  }
  document.addEventListener('pointerdown',e=>{
-  const card=e.target.closest?.('#cards .card.hand-card'),weap=card?null:e.target.closest?.('#weaponinspect');
-  if(!card&&!weap)return;
+  const card=e.target.closest?.('#cards .card.hand-card'),weap=card?null:e.target.closest?.('#weaponinspect'),relic=card||weap?null:e.target.closest?.('.compact-relic .relic-tile');
+  if(!card&&!weap&&!relic)return;
   e.preventDefault();
   if(handDrag||!e.isPrimary||e.button!==0)return;
   const id=active;
+  if(relic){ // relics: read only (never dragged)
+   const slot=relic.id==='relicinspect'?1:relic.id==='relicinspect2'?2:3;
+   handDrag={kind:'relic',id,pointer:e.pointerId,x0:e.clientX,y0:e.clientY,dragging:false,can:false};
+   showZoom(null,chars[id].name+'｜遺物 '+slot,slot===3?'空き：まだ遺物がない':'遺物の装備データ・効果はまだ接続されていません。','',FACE_BORDER[id]);
+   try{relic.setPointerCapture(e.pointerId)}catch(_){}
+   return;
+  }
   if(card){
    const idx=+card.dataset.i,cid=testHandState[id].hand[idx],k=CARDS[cid];if(!k)return;
    const reason=handBlockReason(id,idx);
@@ -1947,7 +2007,7 @@ body.hand-test #cards .card.hand-card:active{transform:none}
  window.addEventListener('blur',()=>finish(false));
  window.addEventListener('resize',()=>finish(false));
  // No scrolling, text selection or long-press menu from a finger that starts on a card or the weapon picture.
- const onHand=e=>e.target.closest?.('#cards .card.hand-card,#weaponinspect');
+ const onHand=e=>e.target.closest?.('#cards .card.hand-card,#weaponinspect,.compact-relic .relic-tile');
  // Stop the browser's own long-press handling (Android haptic tick, selection) the moment a finger lands on a card or the
  // weapon picture. Pointer events still arrive, so the hold / drag above works unchanged.
  document.addEventListener('touchstart',e=>{if(onHand(e)&&e.cancelable)e.preventDefault();},{capture:true,passive:false});
