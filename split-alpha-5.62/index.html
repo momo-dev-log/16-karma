@@ -1948,6 +1948,9 @@ body.hand-test #cards .card.hand-card:active{transform:none}
  window.addEventListener('resize',()=>finish(false));
  // No scrolling, text selection or long-press menu from a finger that starts on a card or the weapon picture.
  const onHand=e=>e.target.closest?.('#cards .card.hand-card,#weaponinspect');
+ // Stop the browser's own long-press handling (Android haptic tick, selection) the moment a finger lands on a card or the
+ // weapon picture. Pointer events still arrive, so the hold / drag above works unchanged.
+ document.addEventListener('touchstart',e=>{if(onHand(e)&&e.cancelable)e.preventDefault();},{capture:true,passive:false});
  document.addEventListener('touchmove',e=>{if(handDrag||onHand(e))e.preventDefault();},{capture:true,passive:false});
  for(const type of ['contextmenu','selectstart','dragstart'])document.addEventListener(type,e=>{if(onHand(e))e.preventDefault();},true);
 })();
