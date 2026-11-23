@@ -1075,15 +1075,15 @@ function testHandRestPart(i){return TEST_HAND&&(i===0||i===2);}
 // Card text with guard and reduction numbers x3 (the test's own numbers).
 // Card text in the test: these cards have their own final numbers; the others get guard / reduction x3.
 const TEST_HAND_DESC={
- M1:'25×2Hit。',M2:'20×2Hit。攻撃する部位への累計Hitが1以上なら20×3Hit。',
- M3:'20×2Hit。攻撃する部位が美桜以外の仲間を狙っていれば20×3Hit。',M4:'35×1Hit。自分に盾45。',M5:'35×3Hit。',
- M6:'攻撃する部位への累計Hitが0〜1なら15×3Hit、2〜3なら20×3Hit、4以上なら25×3Hit。',
- M7:'30×3Hit。攻撃する部位への累計Hit3以上なら、さらに40×1Hit。',
+ M1:'26×2Hit。',M2:'22×2Hit。攻撃する部位への累計Hitが1以上なら22×3Hit。',
+ M3:'20×2Hit。攻撃する部位が美桜以外の仲間を狙っていれば20×3Hit。',M4:'35×1Hit。自分に盾45。',M5:'39×3Hit。',
+ M6:'攻撃する部位への累計Hitが0〜1なら15×3Hit、2〜3なら22×3Hit、4以上なら29×3Hit。',
+ M7:'30×3Hit。攻撃する部位への累計Hit3以上なら、さらに60×1Hit。',
  M8:'25・35・45・55の4Hit。攻撃する部位がこのターンに単体攻撃をするなら、その攻撃を120軽減。',
- M9:'12×4Hit。',M10:'10×2Hit。自分のHPを24払う（HPは最低1残る）。',M11:'15×3Hit。自分のHPが半分以下なら15×5Hit。',
- M12:'30×3Hit。攻撃する部位への累計Hit4以上なら30×5Hit。',
- M13:'18×2Hit。生存中の味方全員に盾45。攻撃する部位への累計Hit4以上なら盾90。',M14:'18×5Hit。自分の盾が0なら18×6Hit。',
- M15:'15×2Hit。自分のHPを36回復（最大HPまで）。攻撃する部位への累計Hit4以上なら72回復。',M16:'30×6Hit。ボスのHPが35%以下なら30×8Hit。',
+ M9:'13×4Hit。',M10:'10×2Hit。自分のHPを24払う（HPは最低1残る）。',M11:'15×3Hit。自分のHPが半分以下なら15×6Hit。',
+ M12:'30×3Hit。攻撃する部位への累計Hit4以上なら30×6Hit。',
+ M13:'18×2Hit。生存中の味方全員に盾45。攻撃する部位への累計Hit4以上なら盾90。',M14:'18×5Hit。自分の盾が0なら18×7Hit。',
+ M15:'15×2Hit。自分のHPを36回復（最大HPまで）。攻撃する部位への累計Hit4以上なら72回復。',M16:'30×6Hit。ボスのHPが35%以下なら30×10Hit。',
  R1:'50ダメージ',R2:'35ダメージ。自分に盾60',R3:'40ダメージ。攻撃した部位の攻撃を30軽減',R4:'110ダメージ。自分の盾が60以上なら160ダメージ',
  R5:'85ダメージ。自分に盾90',R6:'65ダメージ。攻撃する部位が麗華を狙っていれば、その攻撃を60軽減',R7:'100ダメージ。この攻撃で部位を破壊したら自分に盾90',R8:'140ダメージ。自分に盾90',
  R9:'30ダメージ。自分に盾105',R10:'20ダメージ。攻撃した部位の攻撃を36軽減',R11:'45ダメージ。自分の盾が90以上なら80ダメージ',R12:'55ダメージ。自分に盾240',
@@ -1187,25 +1187,34 @@ function handPartTargets(part,id){
 }
 function mioHits(part){return testHandState.m.hits[part]||0;}
 // Mio's 16 cards: hit list and whether a condition makes the card stronger, for a given part.
+// Chainsaw number display: each real hit's damage is shown split into this many small numbers (display only, no extra damage).
+const MIO_SAW_SPLIT={M1:3,M2:3,M3:3,M4:3,M5:3,M6:3,M7:3,M8:3,M9:2,M10:2,M11:3,M12:3,M13:2,M14:3,M15:2,M16:2};
+// Timing and placement of the small numbers (tunable). gap: ms between numbers, from gapMax (few numbers) down to gapMin (many),
+// all numbers appearing within spanMs; lifeMs: how long one number stays. Places: a grid of cols x rows (px from the struck part's
+// centre); places that would cover the part marker (✦), the mark row, the boss name or leave the boss frame are skipped, and the
+// `use` nearest ones are visited in a scattered order.
+const MIO_SAW_FX={gapMax:80,gapMin:40,spanMs:800,lifeMs:300,totalDelayMs:220,cols:[-180,-140,-100,-60,-20,20,60,100,140,180],rows:[-20,0,20],use:12,centerY:0.6};
+// Split a damage into k whole numbers that add up to it (larger parts first): 26 into 3 -> 9, 9, 8.
+function mioSawParts(n,k){k=Math.max(1,Math.min(k,n));const b=Math.floor(n/k),r=n-b*k;return Array.from({length:k},(_,i)=>b+(i<r?1:0));}
 function mioCardPlan(cardId,part){
  const c=chars.m,h=mioHits(part),r=(n,k)=>Array(k).fill(n);let hits=[],boosted=false;
  switch(cardId){
-  case 'M1':hits=r(25,2);break;
-  case 'M2':boosted=h>=1;hits=r(20,boosted?3:2);break; // cumulative hits on that part before the card
+  case 'M1':hits=r(26,2);break;
+  case 'M2':boosted=h>=1;hits=r(22,boosted?3:2);break; // cumulative hits on that part before the card
   case 'M3':boosted=ids.some(x=>x!=='m'&&chars[x].hp>0&&handPartTargets(part,x));hits=r(20,boosted?3:2);break;
   case 'M4':hits=[35];break;
-  case 'M5':hits=r(35,3);break;
-  case 'M6':boosted=h>=2;hits=r(h>=4?25:h>=2?20:15,3);break;
-  case 'M7':boosted=h>=3;hits=r(30,3).concat(boosted?[40]:[]);break;
+  case 'M5':hits=r(39,3);break;
+  case 'M6':boosted=h>=2;hits=r(h>=4?29:h>=2?22:15,3);break;
+  case 'M7':boosted=h>=3;hits=r(30,3).concat(boosted?[60]:[]);break;
   case 'M8':hits=[25,35,45,55];break;
-  case 'M9':hits=r(12,4);break;
+  case 'M9':hits=r(13,4);break;
   case 'M10':hits=r(10,2);break;
-  case 'M11':boosted=c.hp*2<=c.max;hits=r(15,boosted?5:3);break;
-  case 'M12':boosted=h>=4;hits=r(30,boosted?5:3);break;
+  case 'M11':boosted=c.hp*2<=c.max;hits=r(15,boosted?6:3);break;
+  case 'M12':boosted=h>=4;hits=r(30,boosted?6:3);break;
   case 'M13':boosted=h>=4;hits=r(18,2);break;
-  case 'M14':boosted=c.guard===0;hits=r(18,boosted?6:5);break;
+  case 'M14':boosted=c.guard===0;hits=r(18,boosted?7:5);break;
   case 'M15':boosted=h>=4;hits=r(15,2);break;
-  case 'M16':boosted=boss.hp*100<=boss.max*35;hits=r(30,boosted?8:6);break;
+  case 'M16':boosted=boss.hp*100<=boss.max*35;hits=r(30,boosted?10:6);break;
  }
  return {hits,boosted};
 }
@@ -1261,7 +1270,7 @@ function mioResolve(card){
  }
  // One short number per hit instead of the single big number of each hit.
  foeFx.get(part)?.layer.querySelectorAll('.attack-number').forEach(e=>e.remove());
- if(typeof showHitNumbers==='function')showHitNumbers(part,dealt);
+ if(typeof showHitNumbers==='function')showHitNumbers(part,dealt,MIO_SAW_SPLIT[card.id]||1);
  const wnote=typeof mioAfterCardHit==='function'?mioAfterCardHit('m',bonus):'';
  say(`美桜：${card.name} → ${dealt.length}Hit 合計${dealt.reduce((a,b)=>a+b,0)}ダメージ`+(notes.length?'（'+notes.join('・')+'）':'')+wnote);
 }
@@ -1354,8 +1363,8 @@ function renderTestHand(c){
 // 今は使っていない（札の表には出さない。あとで使うかもしれないので残す）。
 // Card face text for the hand test: [big number, short effect]. '—' = no effect line.
 const HAND_FACE={
- M1:['25×2','—'],M2:['20×2','累計1以上で×3'],M3:['20×2','仲間狙いなら×3'],M4:['35×1','盾45'],M5:['35×3','—'],M6:['15×3','累計2で20・4で25'],M7:['30×3','累計3以上で＋40'],M8:['160','単体攻撃を−120'],
- M9:['12×4','—'],M10:['10×2','HP24を払う'],M11:['15×3','HP半分以下で×5'],M12:['30×3','累計4以上で×5'],M13:['18×2','全員盾45（累計4で90）'],M14:['18×5','盾0なら×6'],M15:['15×2','HP+36（累計4以上で72）'],M16:['30×6','ボスHP35%以下で×8'],
+ M1:['26×2','—'],M2:['22×2','累計1以上で×3'],M3:['20×2','仲間狙いなら×3'],M4:['35×1','盾45'],M5:['39×3','—'],M6:['15×3','累計2で22・4で29'],M7:['30×3','累計3以上で＋60'],M8:['160','単体攻撃を−120'],
+ M9:['13×4','—'],M10:['10×2','HP24を払う'],M11:['15×3','HP半分以下で×6'],M12:['30×3','累計4以上で×6'],M13:['18×2','全員盾45（累計4で90）'],M14:['18×5','盾0なら×7'],M15:['15×2','HP+36（累計4以上で72）'],M16:['30×6','ボスHP35%以下で×10'],
  R1:['50','—'],R2:['35','盾60'],R3:['40','攻撃−30'],R4:['110','—'],R5:['85','盾90'],R6:['65','麗華狙いなら攻撃−60'],R7:['100','部位を壊したら盾90'],R8:['140','盾90'],
  R9:['30','盾105'],R10:['20','攻撃−36'],R11:['45','盾90以上で＋35'],R12:['55','盾240'],R13:['100','全体攻撃なら−60'],R14:['40','HPが一番低い味方に盾45'],R15:['95','最初に動いたら盾120'],R16:['155','攻撃−75'],
  K1:['30','毒+2'],K2:['42','毒+1'],K3:['35','毒+1・攻撃−24'],K4:['25','毒+1・盾75'],K5:['70','毒+3'],K6:['65','毒+2・盾60'],K7:['75','毒1つで+8'],K8:['125','毒+4'],
@@ -1804,8 +1813,8 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
 /* Poison stacks on each boss part (display only). Overlay above the boss art; never takes taps. */
 .poison-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .poison-badge{position:absolute;box-sizing:border-box;height:18px;padding:0 5px;border:1px solid #6f9b72;border-radius:9px;background:#141a16d9;color:#d3efcc;font-size:11px;font-weight:800;line-height:16px;white-space:nowrap;transform:translateX(-50%)}
-.hit-pop{position:absolute;transform:translateX(-50%);line-height:1;color:#ffe3da;font-size:24px;font-weight:900;text-shadow:0 1px 3px #000,0 0 6px #000;white-space:nowrap;animation:hit-pop .6s ease-out forwards}
-@keyframes hit-pop{0%{opacity:0;margin-top:2px}20%{opacity:1}100%{opacity:0;margin-top:-6px}}
+.hit-pop{position:absolute;transform:translateX(-50%);line-height:1;color:#ffe3da;font-size:17px;font-weight:900;text-shadow:0 1px 2px #000,0 0 5px #000,0 0 2px #000;white-space:nowrap;animation:hit-pop .3s ease-out forwards}
+@keyframes hit-pop{0%{opacity:0;margin-top:2px}15%{opacity:1}70%{opacity:1}100%{opacity:0;margin-top:-2px}}
 @media (prefers-reduced-motion:reduce){.hit-pop{animation:none}}
 .hit-total{position:absolute;color:#fff1cf;font-size:29px;font-weight:900;text-shadow:0 2px 2px #1a0d11,0 0 10px #e6ad76;white-space:nowrap;animation:attackNumber .7s ease-out forwards}
 @keyframes hit-shake{0%,100%{translate:0 0}30%{translate:-3px 0}70%{translate:3px 0}}
@@ -1860,18 +1869,34 @@ document.addEventListener('selectstart',e=>{if(e.target.closest?.('.equipment-ti
    b.style.left=left+'px';b.dataset.center=String(left+w/2);
   });
  }
- // One short number per hit of a multi-hit card, around the struck part.
- window.showHitNumbers=(i,list)=>{
-  const part=foeEl.querySelectorAll('.boss-part')[i];if(!part)return;const base=arena.getBoundingClientRect(),r=part.getBoundingClientRect();
-  // 0.12 s apart; spots on a 3x2 grid (kept inside the boss frame, below the pill row and above the name); the part shakes on each hit.
-  const fr=foeEl.getBoundingClientRect(),GAP=120,SPOTS=[[-54,-18],[0,-18],[54,-18],[-54,18],[0,18],[54,18]];
-  const cx=Math.max(fr.left-base.left+84,Math.min(fr.right-base.left-84,r.left-base.left+r.width/2)),cy=r.top-base.top+r.height*0.65;
+ // Chainsaw numbers: every real hit's damage is split into small numbers (display only) that pop quickly around the struck part,
+ // then the total. A new card clears what is left of the previous card's numbers, so two cards never mix.
+ let sawTimers=[];
+ window.showHitNumbers=(i,list,split=1)=>{
+  sawTimers.forEach(clearTimeout);sawTimers=[];layer.querySelectorAll('.hit-pop,.hit-total').forEach(e=>e.remove());
+  const part=foeEl.querySelectorAll('.boss-part')[i];if(!part||!list.length)return;const base=arena.getBoundingClientRect(),r=part.getBoundingClientRect();
+  const fx=typeof MIO_SAW_FX!=='undefined'?MIO_SAW_FX:{gapMax:80,gapMin:40,spanMs:800,lifeMs:300,totalDelayMs:220};
+  const fr=foeEl.getBoundingClientRect(),cx=r.left-base.left+r.width/2,cy=r.top-base.top+r.height*(fx.centerY||0.6);
+  // Free places for the numbers (arena coordinates), measured with a sample number.
+  const probe=document.createElement('span');probe.className='hit-pop';probe.style.animation='none';probe.style.visibility='hidden';probe.textContent='−88';document.body.append(probe); // measured outside the number layer
+  const pw=probe.offsetWidth+4,ph=probe.offsetHeight+2;probe.remove();
+  const rel=e=>{const q=e.getBoundingClientRect();return {l:q.left-base.left-3,t:q.top-base.top-3,r:q.right-base.left+3,b:q.bottom-base.top+3};};
+  const avoid=[...foeEl.querySelectorAll('.boss-point-icon.is-selected,.boss-hp-name'),...layer.querySelectorAll('.mark-row')].filter(e=>e.offsetWidth).map(rel);
+  const inF={l:fr.left-base.left+2,t:fr.top-base.top+2,r:fr.right-base.left-2,b:fr.bottom-base.top-2};
+  let places=[];(fx.cols||[0]).forEach(dx=>(fx.rows||[0]).forEach(dy=>{const x=cx+dx,y=cy+dy,bx={l:x-pw/2,t:y-8,r:x+pw/2,b:y-8+ph};
+   if(bx.l<inF.l||bx.r>inF.r||bx.t<inF.t||bx.b>inF.b)return;if(avoid.some(a=>bx.l<a.r&&a.l<bx.r&&bx.t<a.b&&a.t<bx.b))return;places.push({x,y,d:Math.hypot(dx,dy*2)});}));
+  places.sort((p,q)=>p.d-q.d);places=places.slice(0,fx.use||12);if(!places.length)places=[{x:cx,y:cy}];
+  // Scatter: walk the places with a stride that is coprime to their count, so neighbours in time are apart in space.
+  const n=places.length,stride=[5,7,3,1].find(k=>k<n&&n%k!==0&&(n<2||k!==n))||1,order=Array.from({length:n},(_,k)=>places[(k*stride)%n]);
+  const pieces=[];list.forEach((n,h)=>(typeof mioSawParts==='function'?mioSawParts(n,split):[n]).forEach((v,k)=>pieces.push({v,first:k===0})));
+  const gap=pieces.length>1?Math.max(fx.gapMin,Math.min(fx.gapMax,Math.floor(fx.spanMs/(pieces.length-1)))):0;
   const shake=()=>{const el=foeEl.querySelectorAll('.boss-part')[i];if(!el)return;el.classList.remove('hit-shake');void el.offsetWidth;el.classList.add('hit-shake');setTimeout(()=>el.classList.remove('hit-shake'),120);};
-  list.forEach((n,k)=>setTimeout(()=>{const t=document.createElement('span');t.className='hit-pop';t.textContent='−'+n;
-   const [dx,dy]=SPOTS[k%SPOTS.length];t.style.left=(cx+dx)+'px';t.style.top=(cy+dy-12)+'px';layer.append(t);shake();setTimeout(()=>t.remove(),650);},k*GAP));
-  // After the last hit: the total, as big as a normal attack number.
-  if(list.length)setTimeout(()=>{const t=document.createElement('span');t.className='hit-total';t.textContent=String(list.reduce((a,b)=>a+b,0));
-   t.style.left=cx+'px';t.style.top=(cy-16)+'px';layer.append(t);setTimeout(()=>t.remove(),750);},(list.length-1)*GAP+380);
+  const later=(fn,ms)=>sawTimers.push(setTimeout(fn,ms));
+  pieces.forEach((pc,k)=>later(()=>{const t=document.createElement('span');t.className='hit-pop';t.textContent='−'+pc.v;
+   const pl=order[k%order.length];t.style.left=pl.x+'px';t.style.top=(pl.y-8)+'px';t.style.animationDuration=fx.lifeMs+'ms';layer.append(t);if(pc.first)shake();setTimeout(()=>t.remove(),fx.lifeMs+30);},k*gap));
+  // After the last number: the total, as big as a normal attack number.
+  later(()=>{const t=document.createElement('span');t.className='hit-total';t.textContent=String(list.reduce((a,b)=>a+b,0));
+   const tx=Math.max(inF.l+40,Math.min(inF.r-40,places[0].x));t.style.left=tx+'px';t.style.top=(places[0].y-16)+'px';layer.append(t);setTimeout(()=>t.remove(),750);},(pieces.length-1)*gap+fx.totalDelayMs);
  };
  // Poison damage at the end of the enemy phase: a short "−N" at that part.
  window.showPoisonTick=(i,loss)=>{const s=spot(i);if(!s)return;const t=document.createElement('span');t.className='poison-tick';t.textContent='−'+loss;
