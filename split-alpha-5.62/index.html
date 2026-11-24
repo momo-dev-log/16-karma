@@ -1085,9 +1085,9 @@ const TEST_HAND_DESC={
  M13:'18×2Hit。生存中の味方全員に盾45。攻撃する部位への累計Hit4以上なら盾90。',M14:'18×5Hit。自分の盾が0なら18×7Hit。',
  M15:'15×2Hit。自分のHPを36回復（最大HPまで）。攻撃する部位への累計Hit4以上なら72回復。',M16:'30×6Hit。ボスのHPが35%以下なら30×10Hit。',
  R1:'50ダメージ',R2:'35ダメージ。自分に盾60',R3:'40ダメージ。攻撃した部位の攻撃を30軽減',R4:'110ダメージ。自分の盾が60以上なら160ダメージ',
- R5:'85ダメージ。自分に盾90',R6:'65ダメージ。攻撃する部位が麗華を狙っていれば、その攻撃を60軽減',R7:'100ダメージ。この攻撃で部位を破壊したら自分に盾90',R8:'140ダメージ。自分に盾90',
+ R5:'85ダメージ。自分に盾90',R6:'65ダメージ。攻撃する部位が麗華を狙っていれば、その攻撃を60軽減',R7:'130ダメージ',R8:'140ダメージ。自分に盾180',
  R9:'30ダメージ。自分に盾105',R10:'20ダメージ。攻撃した部位の攻撃を36軽減',R11:'45ダメージ。自分の盾が90以上なら80ダメージ',R12:'55ダメージ。自分に盾240',
- R13:'100ダメージ。このターン予告されている全体攻撃をそれぞれ60軽減',R14:'40ダメージ。このターン攻撃される生存中の味方のうち、HPが最も低い1人に盾45。対象者がいなければ盾なし',R15:'95ダメージ。このターン、最初に行動したのが麗華なら自分に盾120',R16:'155ダメージ。攻撃した部位の攻撃を75軽減',
+ R13:'100ダメージ。このターン予告されている全体攻撃をそれぞれ60軽減',R14:'40ダメージ。このターン攻撃される生存中の味方のうち、HPが最も低い1人に盾45。対象者がいなければ盾なし',R15:'95ダメージ。このターン、最初に行動したのが麗華なら自分に盾120',R16:'155ダメージ。攻撃した部位の攻撃を75軽減。自分に盾90',
  K1:'30ダメージ。毒＋2',K2:'42ダメージ。毒＋1',K3:'35ダメージ。毒＋1。攻撃した部位の攻撃を24軽減',K4:'25ダメージ。毒＋1。自分に盾75',
  K5:'70ダメージ。毒＋3。付ける前の毒が4以上なら、さらに毒＋3',K6:'65ダメージ。毒＋2。自分に盾60',K7:'75ダメージ＋攻撃する部位の毒1つにつき16ダメージ',K8:'125ダメージ。毒＋5。付けた後の、その部位の毒ダメージを追加で1回発生させる',
  K9:'40ダメージ。毒＋2。付けた後の毒が4以上なら自分に盾75',K10:'14ダメージ。毒＋1',K11:'55ダメージ＋攻撃する部位の毒1つにつき8ダメージ',K12:'80ダメージ。毒＋4',
@@ -1233,17 +1233,12 @@ function handCardDamage(id,card,foe){
 }
 // How many extra poison damages a card makes right after its hit (K8: once; K16 with 6+ poison on the part: twice).
 function handPoisonBursts(card,foe){return card.id==='K8'?1:card.id==='K16'&&(foe.poison||0)>=6?2:0;}
-function handWouldBreak(id,card,foe){
- if(card.id!=='R7'||foe.broken)return false;
- const n=modifiedDamage(handCardDamage(id,card,foe),chars[id],foe);
- return foe.breakDamage+n>=foe.breakLimit;
-}
 function handLowestAlly(onlyTargeted){return ids.filter(x=>chars[x].hp>0&&(!onlyTargeted||handTargeted(x))).sort((a,b)=>chars[a].hp-chars[b].hp||ids.indexOf(a)-ids.indexOf(b))[0];}
 // Glow: the card's condition is met now (weapon bonus not counted). Mio: any part where it would be met.
 function handBoosted(id,card){
  if(id==='m')return foes.some((f,i)=>f.hp>0&&mioCardPlan(card.id,i).boosted);
  const foe=foes[selectedFoe],p=foe.poison||0;
- if(handCardDamage(id,card,foe)>card.damage||handWouldBreak(id,card,foe))return true;
+ if(handCardDamage(id,card,foe)>card.damage)return true;
  switch(card.id){
   case 'R6':return handPartTargets(selectedFoe,'r');
   case 'R13':return handDueParts().some(i=>foes[i].attackKind==='all');
@@ -1284,14 +1279,14 @@ function handRKEffects(id,card,foe,part){
   case 'R3':weak(foe,30);break;
   case 'R5':c.guard+=90;break;
   case 'R6':if(handPartTargets(part,'r')){weak(foe,60);notes.push(`${foe.glyph}の攻撃 −60`);}break;
-  case 'R8':c.guard+=90;break;
+  case 'R8':c.guard+=180;break;
   case 'R9':c.guard+=105;break;
   case 'R10':weak(foe,36);break;
   case 'R12':c.guard+=240;break;
   case 'R13':for(const i of handDueParts())if(foes[i].attackKind==='all'){weak(foes[i],60);notes.push(`${foes[i].glyph}の全体攻撃 −60`);}break;
   case 'R14':{const t=handLowestAlly(true);if(t){chars[t].guard+=45;notes.push(`${chars[t].name}に盾+45`);}else notes.push('攻撃される味方がいない：盾なし');}break;
   case 'R15':if(!testHandState.firstActor||testHandState.firstActor==='r'){c.guard+=120;notes.push('最初に行動：盾+120');}break;
-  case 'R16':weak(foe,75);break;
+  case 'R16':weak(foe,75);c.guard+=90;break;
   case 'K1':addPoison(2);break;
   case 'K2':addPoison(1);break;
   case 'K3':addPoison(1);weak(foe,24);break;
@@ -1324,9 +1319,7 @@ function testHandPlay(idx){
   const notes=handRKEffects(id,card,foe,selectedFoe);
   const bonus=typeof mioWeaponCardBonus==='function'?mioWeaponCardBonus(id):0;damage+=bonus;
   damage=modifiedDamage(damage,c,foe);
-  const wasBroken=foe.broken;
   queueAttack(damage,id);
-  if(card.id==='R7'&&!wasBroken&&foe.broken){c.guard+=90;notes.push('部位を壊して盾+90');}
   // K8 / K16: the part's poison damage once / twice more, right now (apart from the end of the enemy phase).
   for(let k=0;k<bursts;k++){if(boss.hp<=0)break;const loss=Math.min(boss.hp,testPoisonDamage(foe));if(!(loss>0))break;boss.hp-=loss;syncBoss();notes.push(`毒ダメージ −${loss}`);
    setTimeout(()=>{if(typeof showPoisonTick==='function')showPoisonTick(part,loss);},450+k*380);}
@@ -1367,8 +1360,8 @@ function renderTestHand(c){
 const HAND_FACE={
  M1:['26×2','—'],M2:['22×2','累計1以上で×3'],M3:['20×2','仲間狙いなら×3'],M4:['35×1','盾45'],M5:['39×3','—'],M6:['15×3','累計2で22・4で29'],M7:['30×3','累計3以上で＋60'],M8:['160','単体攻撃を−120'],
  M9:['13×4','—'],M10:['10×2','HP24を払う'],M11:['15×3','HP半分以下で×6'],M12:['30×3','累計4以上で×6'],M13:['18×2','全員盾45（累計4で90）'],M14:['18×5','盾0なら×7'],M15:['15×2','HP+36（累計4以上で72）'],M16:['30×6','ボスHP35%以下で×10'],
- R1:['50','—'],R2:['35','盾60'],R3:['40','攻撃−30'],R4:['110','—'],R5:['85','盾90'],R6:['65','麗華狙いなら攻撃−60'],R7:['100','部位を壊したら盾90'],R8:['140','盾90'],
- R9:['30','盾105'],R10:['20','攻撃−36'],R11:['45','盾90以上で＋35'],R12:['55','盾240'],R13:['100','全体攻撃なら−60'],R14:['40','HPが一番低い味方に盾45'],R15:['95','最初に動いたら盾120'],R16:['155','攻撃−75'],
+ R1:['50','—'],R2:['35','盾60'],R3:['40','攻撃−30'],R4:['110','—'],R5:['85','盾90'],R6:['65','麗華狙いなら攻撃−60'],R7:['130','—'],R8:['140','盾180'],
+ R9:['30','盾105'],R10:['20','攻撃−36'],R11:['45','盾90以上で＋35'],R12:['55','盾240'],R13:['100','全体攻撃なら−60'],R14:['40','HPが一番低い味方に盾45'],R15:['95','最初に動いたら盾120'],R16:['155','攻撃−75・盾90'],
  K1:['30','毒+2'],K2:['42','毒+1'],K3:['35','毒+1・攻撃−24'],K4:['25','毒+1・盾75'],K5:['70','毒+3'],K6:['65','毒+2・盾60'],K7:['75','毒1つで+8'],K8:['125','毒+4'],
  K9:['40','毒+2（毒4以上で盾75）'],K10:['14','毒+1'],K11:['55','毒1つで+8'],K12:['80','毒+4'],K13:['50','毒を半分使い、1つで+8'],K14:['25','毒+2（6以上で+2）'],K15:['95','毒+2・攻撃−45'],K16:['135','毒6以上で＋70'],
 };
@@ -1465,6 +1458,7 @@ function handWeaponPreview(id,part){
 }
 if(TEST_HAND){
  for(const [cid,name] of Object.entries(TEST_HAND_NAME))if(CARDS[cid])CARDS[cid].name=name;
+ CARDS.R7.damage=130; // card ledger v1.1 (hand test only)
  testHandInit();
  testHardBoss=true;testSetBoss(TEST_BOSS_SCALE);testToggleLabel();
  // Form buttons and restart in the header (the header keeps its height).
