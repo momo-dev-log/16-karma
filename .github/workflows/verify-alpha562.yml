@@ -1,0 +1,52 @@
+name: Verify alpha 5.62 combat UI
+on:
+  push:
+    branches:
+      - refactor/split-alpha-5-62-assets
+    paths:
+      - split-alpha-5.62/**
+      - .github/workflows/verify-alpha562.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify split images and JavaScript syntax
+        run: node split-alpha-5.62/scripts/verify_split.js
+      - name: Test real combat status functions
+        run: node split-alpha-5.62/scripts/test_status.js
+      - name: Test turn progression and enemy damage
+        run: node split-alpha-5.62/scripts/test_turn.js
+      - name: Test enemy forecasts against hit and ailment rules
+        run: node split-alpha-5.62/scripts/test_forecast.js
+      - name: Test queued attacks and boss break mechanics
+        run: node split-alpha-5.62/scripts/test_boss.js
+      - name: Exercise actual queued attack functions
+        run: node split-alpha-5.62/scripts/test_actual_attack.js
+      - name: Exercise boss break threshold and rapid target switching
+        run: node split-alpha-5.62/scripts/test_break_sequence.js
+      - name: Exercise boss part stun recovery
+        run: node split-alpha-5.62/scripts/test_stun_recovery.js
+      - name: Test combined enemy hits and lethal poison
+        run: node split-alpha-5.62/scripts/test_multi_hit_poison.js
+      - name: Document multi-attacker ailment attribution
+        run: node split-alpha-5.62/scripts/test_ailment_attribution.js
+      - name: Test ally poison knockout and ailment exclusion
+        run: node split-alpha-5.62/scripts/test_ally_poison_ko.js
+      - name: Test simultaneous victory and defeat endings
+        run: node split-alpha-5.62/scripts/test_endings.js
+      - name: Test disabled combat actions after battle end
+        run: node split-alpha-5.62/scripts/test_post_end_controls.js
+      - name: Test overlapping attack animations and turn close
+        run: node split-alpha-5.62/scripts/test_attack_race.js
+      - name: Test card curse charge and status combinations
+        run: node split-alpha-5.62/scripts/test_card_curse_matrix.js
+      - name: Test status stacking and expiry lifecycle
+        run: node split-alpha-5.62/scripts/test_status_lifecycle.js
+      - name: Test target selection locks
+        run: node split-alpha-5.62/scripts/test_target_selection_lock.js
+      - name: Test boss break and status interactions
+        run: node split-alpha-5.62/scripts/test_break_status_matrix.js
